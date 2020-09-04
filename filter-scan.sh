@@ -68,9 +68,12 @@ bcftools view EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.vcf -m2 -M2 -v 
 bcftools +prune -l 0.6 -w 1000 EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.bcf -Ob -o EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf &
 bcftools view EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf -Ou -o EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.vcf &
 
-### admixture
 
-/programs/plink-1.9-x86_64-beta5/plink --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.vcf --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb --recode --allow-extra-chr &
+### stopped here on 9/4/20 3:30 PM
+### Error: Unrecognized type in .bcf file.
+
+### admixture
+/programs/plink-1.9-x86_64-beta5/plink --bcf EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb --recode --allow-extra-chr &
 /programs/plink-1.9-x86_64-beta5/plink --file EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb --make-bed --allow-extra-chr --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb &
 
 /programs/admixture/admixture EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bed 1 -B -j4 &> admix.k1.prune1kb.log &
@@ -81,10 +84,5 @@ bcftools view EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf -O
 
 # cross-validation of appropriate K values
 for K in 1 2 3 4 5; \
-do /programs/admixture/admixture --cv EUSTreseq_maf025dp5.bed $K | tee log${K}.out; done
+do /programs/admixture/admixture --cv EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bed $K | tee log${K}.out; done
 grep -h CV log*.out
-#CV error (K=1): 0.72952 ### ok then.... this is best
-#CV error (K=2): 0.87732
-#CV error (K=3): 1.12175
-#CV error (K=4): 1.65431
-#CV error (K=5): 1.77340
