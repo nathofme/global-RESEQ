@@ -383,7 +383,7 @@ intersect(div.outliers.hiUSpi$CHROM,div.outliers.hiAUpi$CHROM)
 ```
 None of these regions overlap between invasions.
 
-## Diversity underlying candidate peaks
+## Figures: Diversity underlying candidate peaks
 
 #### Chromosome 2
 ``` {r }
@@ -479,7 +479,7 @@ plot((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_UKUS, type="n",
 lines((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
 par(new=T)
 plot((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
-lines((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1, lty="dashed")
+lines((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1)
 axis(side=2,ylim=c(-0.2,0.4))
 abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
 abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
@@ -519,7 +519,7 @@ plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_UKUS, type="n", bty
 lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
 par(new=T)
 plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
-lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, col="grey50", lwd=1, lty="dashed")
+lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, col="grey50", lwd=1)
 axis(side=2,ylim=c(-0.01,0.4))
 abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
 abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
@@ -530,9 +530,7 @@ quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chro
 
 ```{r } 
 chrom1.div <- div[which(div$CHROM==1),]
-
-tail(chrom1.div)
-chrom1.div.small <- chrom1.div[which(chrom1.div$SNP < 6720),]
+chrom1.div.small <- chrom1.div[which(chrom1.div$SNP < 6700),]
 chrom1.div.small <- chrom1.div.small[which(chrom1.div.small$SNP > 6400),]
 
 quartz(height=5,width=7)
@@ -583,7 +581,7 @@ chrom1A.div <- div[which(div$CHROM==1.25),]
 # 1446 windows, 3 ticks
 
 chrom1A.div.small <- chrom1A.div[which(chrom1A.div$SNP < 4000),]
-chrom1A.div.small <- chrom1A.div.small[which(chrom1A.div.small$SNP > 3400),]
+chrom1A.div.small <- chrom1A.div.small[which(chrom1A.div.small$SNP > 3700),]
 
 quartz(height=5,width=7)
 options(scipen=999)
@@ -633,8 +631,8 @@ chrom4.div <- div[which(div$CHROM==4),]
 # 13506 to 14923,
 # 1417 windows, 7 ticks - peak ~500 windows from start 
 
-chrom4.div.small <- chrom4.div[which(chrom4.div$SNP < 14200),]
-chrom4.div.small <- chrom4.div.small[which(chrom4.div.small$SNP > 13800),]
+chrom4.div.small <- chrom4.div[which(chrom4.div$SNP < 14150),]
+chrom4.div.small <- chrom4.div.small[which(chrom4.div.small$SNP > 13850),]
 
 quartz(height=5,width=7)
 options(scipen=999)
@@ -684,8 +682,8 @@ chrom4A.div <- div[which(div$CHROM==4.5),]
 # 13097 to 13505
 # 408 windows, 4 ticks
 
-chrom4A.div.small <- chrom4A.div[which(chrom4A.div$SNP < 13350),]
-chrom4A.div.small <- chrom4A.div.small[which(chrom4A.div.small$SNP > 13100),]
+chrom4A.div.small <- chrom4A.div[which(chrom4A.div$SNP < 13300),]
+chrom4A.div.small <- chrom4A.div.small[which(chrom4A.div.small$SNP > 13150),]
 
 quartz(height=5,width=7)
 options(scipen=999)
