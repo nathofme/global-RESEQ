@@ -1,0 +1,727 @@
+---
+title: "Genome Scans"
+output: html_document
+self_contained: no
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This document describes how to go from raw vcftools output of diversity metrics (Fst, pi, and Tajima's D) to Manhattan plots, including making figures for the manuscript associated with this repo. This script is a result of brute forcing things to work: I am certainly no expert, and thus lots of the notes refer to my own dumb mistakes.
+
+```{r packages, message=FALSE}
+library(tidyverse)
+library(qqman)
+library(scales)
+```
+
+## Prepare files: join vcftools output into a single table.
+
+First, read in raw output files from vcftools (in this repo, see filter-scan.sh for code to generate).
+
+```{r read in files}
+fst.UKUS.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseud_nostep_UKUS_50kb.windowed.weir.fst",sep="\t"))
+fst.AUUK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseud_nostep_AUUK_50kb.windowed.weir.fst",sep="\t"))
+fst.USAU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseud_nostep_AUUS_50kb.windowed.weir.fst",sep="\t"))
+pi.UK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseudochrom_UK_pi_50kb.windowed.pi",sep="\t"))
+pi.AU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseudochrom_AU_pi_50kb.windowed.pi",sep="\t"))
+pi.US.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseudochrom_US_pi_50kb.windowed.pi",sep="\t"))
+TajD.UK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseudochrom_UK_TajimaD_50kb.Tajima.D",sep="\t"))
+TajD.AU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseudochrom_AU_TajimaD_50kb.Tajima.D",sep="\t"))
+TajD.US.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/EUSTreseq_pseudochrom_US_TajimaD_50kb.Tajima.D",sep="\t"))
+```
+
+vcftools outputs a few identifies for position: "CHROM," "BIN_START" and "BIN_END" for .fst and .pi files, but only "CHROM" AND "BIN_START" for .Tajima.D files. Unfortunately, the numbering is off, so we'll add 1 to every "BIN_START" in the .Tajima.D files.
+
+```{r fix Tajima D bin start}
+head(TajD.AU.50kb)
+head(fst.AUUK.50kb)
+TajD.UK.50kb$BIN_START <- TajD.UK.50kb$BIN_START + 1
+TajD.AU.50kb$BIN_START <- TajD.AU.50kb$BIN_START + 1
+TajD.US.50kb$BIN_START <- TajD.US.50kb$BIN_START + 1
+```
+
+Now BIN_START should match. To use dplyr, we'll need a column that specifes a unique position in the genome. Create a new column that joins "CHROM" and "BIN_START" so that we match each value based on actual position in the genome.
+
+```{r make position identifier}
+fst.UKUS.50kb$POS_ID <- paste(fst.UKUS.50kb$CHROM,fst.UKUS.50kb$BIN_START,sep="-")
+fst.AUUK.50kb$POS_ID <- paste(fst.AUUK.50kb$CHROM,fst.AUUK.50kb$BIN_START,sep="-")
+fst.USAU.50kb$POS_ID <- paste(fst.USAU.50kb$CHROM,fst.USAU.50kb$BIN_START,sep="-")
+pi.UK.50kb$POS_ID <- paste(pi.UK.50kb$CHROM,pi.UK.50kb$BIN_START,sep="-")
+pi.AU.50kb$POS_ID <- paste(pi.AU.50kb$CHROM,pi.AU.50kb$BIN_START,sep="-")
+pi.US.50kb$POS_ID <- paste(pi.US.50kb$CHROM,pi.US.50kb$BIN_START,sep="-")
+TajD.UK.50kb$POS_ID <- paste(TajD.UK.50kb$CHROM,TajD.UK.50kb$BIN_START,sep="-")
+TajD.AU.50kb$POS_ID <- paste(TajD.AU.50kb$CHROM,TajD.AU.50kb$BIN_START,sep="-")
+TajD.US.50kb$POS_ID <- paste(TajD.US.50kb$CHROM,TajD.US.50kb$BIN_START,sep="-")
+```
+
+Now drop column names that we no longer need, otherwise we'll have a giant table after all the merging.
+```{r drop duplicate columns}
+fst.AUUK.50kb <- fst.AUUK.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+fst.USAU.50kb <- fst.USAU.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+pi.UK.50kb <- pi.UK.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+pi.AU.50kb <- pi.AU.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+pi.US.50kb <- pi.US.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+TajD.UK.50kb <- TajD.UK.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
+TajD.AU.50kb <- TajD.AU.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
+TajD.US.50kb <- TajD.US.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
+```
+
+We'll join tables based on the unique position identified (POS_ID). The rename() command ensures that each new column header specifies population (new name first). Heads up: each time you join two tables, those two tables are no longer accessible except as a joined table! 
+
+```{r join data}
+fstUKUS.fstAUUK.50kb <- left_join(fst.UKUS.50kb,fst.AUUK.50kb, by = "POS_ID", copy = FALSE, suffix=c("_UKUS","_AUUK"))
+fst.50kb <- left_join(fstUKUS.fstAUUK.50kb,fst.USAU.50kb, by = "POS_ID", copy = FALSE, suffix=c("","_USAU"))
+fst.50kb <- rename(fst.50kb, WEIGHTED_FST_USAU = WEIGHTED_FST)
+fst.50kb <- rename(fst.50kb, MEAN_FST_USAU = MEAN_FST)
+fst.50kb.piUK <- left_join(fst.50kb,pi.UK.50kb, by = "POS_ID", copy = FALSE)
+fst.50kb.piUK.piUS <- left_join(fst.50kb.piUK,pi.US.50kb, by = "POS_ID", copy = FALSE,suffix=c("_UK","_US"))
+fst.pi.50kb <- left_join(fst.50kb.piUK.piUS,pi.AU.50kb, by = "POS_ID", copy = FALSE)
+fst.pi.50kb <- rename(fst.pi.50kb, PI_AU = PI)
+fst.pi.50kb.TajDUK <- left_join(fst.pi.50kb,TajD.UK.50kb, by = "POS_ID", copy = FALSE)
+fst.pi.50kb.TajDUK.TajDUS <- left_join(fst.pi.50kb.TajDUK,TajD.US.50kb, by = "POS_ID", copy = FALSE, suffix=c("_UK","_US"))
+div <- left_join(fst.pi.50kb.TajDUK.TajDUS,TajD.AU.50kb, by = "POS_ID", copy = FALSE)
+div <- rename(div, TajimaD_AU = TajimaD)
+```
+
+We're going to drop data from:
+* small scaffolds (which conveniently start with 'KQ' or 'LNCF', 
+* any rows (positions) with missing data (NA), 
+* and also coerce "negative" FST or pi to zero. 
+We replace POS_ID (which was converted to numeric) with SNP.
+For the qqman package, chromosomes need to be a numeric value, so we also use lapply() below to rename chromosomes.
+```{r clean up data}
+div <- filter(div, !grepl('KQ',CHROM))
+div <- filter(div, !grepl('LNCF',CHROM))
+div <- filter(div, !grepl('Unknown',CHROM))
+div <- div %>% drop_na()
+div[,c(5:6)][div[,c(5:6)] < 0] <- 0
+div[,c(8:14)][div[,c(8:14)] < 0] <- 0
+div <- data.frame(lapply(div, function(x) {gsub("1A", "1.25", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("1B", "1.75", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("4A", "4.5", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("LG5", "28", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("LGE22", "29", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("Z", "0", x)}))
+indx <- sapply(div, is.factor)
+div[indx] <- lapply(div[indx], function(x) as.numeric(as.character(x)))
+div <- div %>% select(-POS_ID)
+div$SNP <- seq.int(nrow(div))
+str(div)
+```
+
+Now we're ready to plot and calculate genome-wide values!
+
+
+# Exploring genetic variation
+
+First, we look at the distribution of variation across the genome.
+
+### Manhattan plots
+
+```{r plot manhattans of fst, warning=FALSE}
+
+manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UKUS", 
+          ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
+          cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Fst.UKUS.Manhattan.pdf",w=12,h=3)
+manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UKUS", 
+          ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
+          cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
+dev.off()
+
+manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_AUUK", 
+          ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
+          cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Fst.AUUK.Manhattan.pdf",w=12,h=3)
+manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_AUUK", 
+          ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
+          cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
+dev.off()
+
+manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_USAU", 
+          ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
+          cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Fst.USAU.Manhattan.pdf",w=12,h=3)
+manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_USAU", 
+          ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
+          cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
+dev.off()
+```
+
+
+## Histograms of FST, pi
+
+What's the statistical distribution of these values?
+```{r histogram of Fst}
+summary(div$WEIGHTED_FST_AUUK)
+summary(div$WEIGHTED_FST_UKUS)
+summary(div$WEIGHTED_FST_USAU)
+lab.AU <- rep("AU.UK",length(div$WEIGHTED_FST_AUUK))
+lab.US <- rep("UK.US",length(div$WEIGHTED_FST_UKUS))
+Fst.group <- c(lab.AU,lab.US)
+Fst.hist.data <- c(div$WEIGHTED_FST_AUUK,div$WEIGHTED_FST_USUK)
+Fst.hist <- data.frame(Fst = Fst.hist.data, population = Fst.group)
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_Fst.pdf",width=4,height=3)
+ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
+  theme_classic() +
+  geom_density(alpha=0.5,lwd=0.5) +
+  scale_fill_manual(values=c("#F2C14E","#2c81a8")) + xlim(0,0.5) + 
+  xlab("Fst") + labs(fill="Population") + 
+  geom_vline(xintercept=0.03,colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
+dev.off()
+ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
+  theme_classic() +
+  geom_density(alpha=0.5,lwd=0.5) +
+  scale_fill_manual(values=c("#F2C14E","#2c81a8")) + xlim(0,0.5) + 
+  xlab("Fst") + labs(fill="Population") + 
+  geom_vline(xintercept=0.03,colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
+```
+
+
+```{r histogram of pi}
+summary(div$PI_AU)
+summary(div$PI_UK)
+summary(div$PI_US)
+
+lab.AU <- rep("AU",length(div$PI_AU))
+lab.US <- rep("US",length(div$PI_US))
+lab.UK <- rep("UK",length(div$PI_UK))
+group <- c(lab.AU,lab.US,lab.UK)
+pi.hist.data <- c(div$PI_UK,div$PI_US,div$PI_AU)
+pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
+str(pi.hist.lab)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("black","#2c81a8","#F2C14E")) + xlim(-0.0001,0.02) + 
+  xlab("Pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div$PI_AU),colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  geom_vline(xintercept=mean(div$PI_US),colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  theme(legend.position="none")
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_Pi.pdf",width=4,height=3)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("black","#2c81a8","#F2C14E")) + xlim(-0.0001,0.02) + 
+  xlab("Pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div$PI_US),colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  geom_vline(xintercept=mean(div$PI_AU),colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  theme(legend.position="none")
+dev.off()
+
+```
+Average nucleotide diversity for both invasions is the same (0.003). There are two vertical lines overlaid in the plot above.
+
+```{r scatterplots of pi}
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
+  xlab("") + ylab("") + xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_USvsUK.pdf",width=2,height=2)
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
+  xlab("") + ylab("") + xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
+dev.off()
+
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
+  xlab("") + ylab("") +
+  xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_AUvsUK.pdf",width=2,height=2)
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
+  xlab("") + ylab("") +
+  xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
+dev.off()
+
+```
+
+## Identifying outliers
+
+```{r IDing outliers}
+
+quantile(div$WEIGHTED_FST_AUUK, c(.9,.99,.999)) 
+quantile(div$WEIGHTED_FST_UKUS, c(.9,.99,.999)) 
+
+mean(div$WEIGHTED_FST_AUUK) + 5*sd(div$WEIGHTED_FST_AUUK)
+mean(div$WEIGHTED_FST_UKUS) + 5*sd(div$WEIGHTED_FST_UKUS)
+
+div.outliers.AUUK <- div[which(div$WEIGHTED_FST_AUUK > quantile(div$WEIGHTED_FST_AUUK,.99)),]
+div.outliers.USUK <- div[which(div$WEIGHTED_FST_UKUS > quantile(div$WEIGHTED_FST_UKUS,.99)),]
+
+unique(div.outliers.USUK$CHROM)
+length(div.outliers.USUK$SNP)
+write.csv(div.outliers.USUK,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstOutliers.USUK.csv")
+
+unique(div.outliers.AUUK$CHROM)
+length(div.outliers.AUUK$SNP)
+write.csv(div.outliers.AUUK,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstOutliers.AUUK.csv")
+```
+
+
+What's going on w/ other metrics at these outliers?
+```{r pi and TajD at outliers}
+summary(div.outliers.AUUK$PI_UK)
+summary(div.outliers.AUUK$PI_AU)
+summary(div.outliers.AUUK$TajimaD_AU)
+summary(div.outliers.AUUK$TajimaD_UK)
+summary(div.outliers.USUK$PI_US)
+summary(div.outliers.USUK$PI_UK)
+summary(div.outliers.USUK$TajimaD_US)
+summary(div.outliers.USUK$TajimaD_UK)
+```
+
+
+
+FST AU vs. US < 25% of values
+```{r low diff among invasions at outliers}
+div.outliers.AUUK.lowFstUSAU <- div.outliers.AUUK[which(div.outliers.AUUK$WEIGHTED_FST_USAU < quantile(div.outliers.AUUK$WEIGHTED_FST_USAU,.25) ),] 
+div.outliers.AUUK.lowFstUSAU
+length(div.outliers.AUUK.lowFstUSAU$SNP)
+div.outliers.USUK.lowFstUSAU <- div.outliers.USUK[which(div.outliers.USUK$WEIGHTED_FST_USAU < quantile(div.outliers.AUUK$WEIGHTED_FST_USAU,.25) ),] 
+div.outliers.USUK.lowFstUSAU
+length(div.outliers.USUK.lowFstUSAU$SNP)
+intersect(div.outliers.AUUK.lowFstUSAU$CHROM,div.outliers.AUUK.lowFstUSAU$CHROM)
+```
+
+
+# Step 4: How do Fst and pi change across the genome? among invasions?
+
+What's the difference in diversity between native and invasive ranges?
+```{r diff in diversity}
+div$piUK.piAU <- div$PI_UK - div$PI_AU
+div$piUK.piUS <- div$PI_UK - div$PI_US
+summary(div$piUK.piAU)
+summary(div$piUK.piUS)
+```
+
+# Novel diversity in invasions
+In a given window, if diversity in the invasive range is higher than that of the native range, it is possible that those variants are novel mutations. This filtering will tell us whether we should look at particular genotypes in these regions.
+
+Possibly "novel" diversity (e.g., lower than average native diversity and higher than average invasive)
+```{r }
+div.lownatpi <- div[which(div$PI_UK < mean(div$PI_UK)),]
+length(div.lownatpi$SNP)
+unique(div.lownatpi$CHROM)
+length(unique(div.lownatpi$CHROM))
+```
+5521 SNPs have below-average diversity in the native range.
+Of these SNPs, how many are in the top 25% of pi in the invasive range (AU or US)? 
+
+```{r }
+summary(div.lownatpi$PI_AU)
+div.novelAUpi <- div.lownatpi[which(div.lownatpi$PI_AU > quantile(div.lownatpi$PI_AU,0.75)),]
+unique(div.novelAUpi$CHROM) # which chromosomes 
+length(div.novelAUpi$CHROM) # number of windows
+
+
+
+
+
+length(div.novelAUpi$SNP)/length(div.lownatpi$SNP)
+```
+38.1% of low native diversity SNPs are higher in AU diversity.
+
+```{r }
+summary(div.lownatpi$PI_US)
+div.novelUSpi <- div.lownatpi[which(div.lownatpi$PI_US > quantile(div.lownatpi$PI_US,0.75)),]
+length(div.novelUSpi$SNP)/length(div.lownatpi$SNP)
+```
+37.7% of low native diversity SNPs are higher in US diversity.
+
+
+```{r }
+
+
+unique(div.novelUSpi$CHROM)
+length(div.novelUSpi$CHROM)
+
+intersect(div.novelAUpi$CHROM,div.novelUSpi$CHROM)
+length(intersect(div.novelAUpi$CHROM,div.novelUSpi$CHROM))
+
+intersect(div.novelAUpi$SNP,div.novelUSpi$SNP)
+length(intersect(div.novelAUpi$SNP,div.novelUSpi$SNP))
+```
+
+#### What's going on at outlier windows in particular? 
+
+
+```{r }
+div.outliers.hiAUpi <- div.outliers.AUUK[which(div.outliers.AUUK$PI_AU > div.outliers.AUUK$PI_UK),]
+unique(div.outliers.hiAUpi$CHROM)
+length(div.outliers.hiAUpi$SNP)
+length(div.outliers.AUUK$SNP)
+length(div.outliers.hiAUpi$SNP)/length(div.outliers.AUUK$SNP)
+```
+85% of FST outlier windows have higher diversity in AU 
+
+
+```{r }
+div.outliers.hiUSpi <- div.outliers.USUK[which(div.outliers.USUK$PI_US > div.outliers.USUK$PI_UK),]
+unique(div.outliers.hiUSpi$CHROM) 
+length(div.outliers.hiUSpi$SNP) 
+length(div.outliers.USUK$SNP)
+length(div.outliers.hiUSpi$SNP)/length(div.outliers.USUK$SNP)
+```
+Only 38% of FST outlier windows have higher diversity in US
+
+```{r }
+intersect(div.outliers.hiUSpi$CHROM,div.outliers.hiAUpi$CHROM)
+```
+None of these regions overlap between invasions.
+
+## Diversity underlying candidate peaks
+
+#### Chromosome 2
+``` {r }
+chrom2.div <- div[which(div$CHROM==2),]
+unique(chrom2.div$SNP)
+
+chrom2.div.small <- chrom2.div[which(chrom2.div$SNP < 8980),]
+chrom2.div.small <- chrom2.div.small[which(chrom2.div.small$SNP > 8600),]
+# 39200001 to 51650000
+tail(chrom2.div.small)
+
+
+quartz(height=5,width=7)
+options(scipen=999)
+par(mfrow=c(2,1)) # set rows
+par(mar=c(0,2,0.5,2)) # set margins for each plot
+plot((chrom2.div.small$BIN_START), chrom2.div.small$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.5))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.5))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.5))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1)
+axis(side=2,ylim=c(-0.2,0.5))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.04))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$PI_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$PI_US, col="#2c81a8", lwd=2)
+axis(side=4, ylim=c(0,0.04))
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$PI_UK, col="#39C855", lwd=1)
+par(mar=c(1,2,1,2))
+plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,2.6))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.6))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_US, col="#2c81a8",lwd=2)
+par(new=T)
+plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.6))
+lines((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_UK, col="#39C855", lwd=1)
+axis(side=2, ylim=c(-2.4,2.4)) # tajima's D axis
+axis(side=1)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome2.ManhattanZoom.pdf", type="pdf")
+```
+
+
+#### Chromosome 6
+
+```{r }
+chrom6.div <- div[which(div$CHROM==6),]
+# runs from 16155 to 16871
+# chrom 6 = 716 50kb windows ("SNPs" here)
+
+chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16325),]
+chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16225),]
+
+head(chrom6.div.small)
+
+chrom6.div.hifst <- chrom6.div[which(chrom6.div$SNP < 16281),]
+chrom6.div.hifst <- chrom6.div.small[which(chrom6.div.small$SNP > 16263),]
+
+# AUUK high fst: window 5350001 to 6300001 on Chrom 6
+# "SNP" 16263 to 16281
+
+mean(chrom6.div.hifst$PI_UK) 
+mean(chrom6.div.hifst$PI_US) 
+mean(chrom6.div.hifst$PI_AU) 
+
+chrom6.div.med <- chrom6.div[which(chrom6.div$SNP < 16450),]
+chrom6.div.med <- chrom6.div.med[which(chrom6.div.med$SNP > 16155),]
+
+
+```
+
+
+
+
+```{r }
+quartz(height=5,width=7)
+options(scipen=999)
+par(mfrow=c(2,1))
+par(mar=c(0,2,0.5,2))
+plot((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1, lty="dashed")
+axis(side=2,ylim=c(-0.2,0.4))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.04))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$PI_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$PI_US, col="#2c81a8", lwd=2)
+axis(side=4, ylim=c(0,0.03))
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$PI_UK, col="#39C855", lwd=1)
+par(mar=c(1,2,1,2))
+plot((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,2.4))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.4))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_US, col="#2c81a8",lwd=2)
+par(new=T)
+plot((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.4))
+lines((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_UK, col="#39C855", lwd=1)
+axis(side=2, ylim=c(-2.4,2.4))
+axis(side=1)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome6.ManhattanZoom.pdf", type="pdf")
+```
+
+
+```{r }
+quartz(height=3,width=7)
+options(scipen=999)
+par(new=T)
+plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
+lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
+lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
+lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, col="grey50", lwd=1, lty="dashed")
+axis(side=2,ylim=c(-0.01,0.4))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome6.BroaderFSTaroundPeak.pdf", type="pdf")
+```
+
+#### Chromosome 1
+
+```{r } 
+chrom1.div <- div[which(div$CHROM==1),]
+
+tail(chrom1.div)
+chrom1.div.small <- chrom1.div[which(chrom1.div$SNP < 6720),]
+chrom1.div.small <- chrom1.div.small[which(chrom1.div.small$SNP > 6400),]
+
+quartz(height=5,width=7)
+options(scipen=999)
+par(mfrow=c(2,1))
+par(mar=c(0,2,0.5,2))
+plot((chrom1.div.small$BIN_START), chrom1.div.small$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1)
+axis(side=2,ylim=c(-0.2,0.4))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.03))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$PI_AU, col="#F8DD9E", lwd=2)
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$PI_US, col="#66A3C0", lwd=2)
+axis(side=4, ylim=c(0,0.03))
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$PI_UK, col="#39C855", lwd=1)
+par(mar=c(1,2,1,2))
+plot((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,3.4))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_US, col="#2c81a8",lwd=2)
+par(new=T)
+plot((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_UK, col="#39C855", lwd=1)
+axis(side=2, ylim=c(-2.4,3.4))
+axis(side=1)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome1.ManhattanZoom.pdf", type="pdf")
+```
+
+
+#### Chromosome 1A
+
+```{r } 
+chrom1A.div <- div[which(div$CHROM==1.25),]
+# 2896 to 4342
+# 1446 windows, 3 ticks
+
+chrom1A.div.small <- chrom1A.div[which(chrom1A.div$SNP < 4000),]
+chrom1A.div.small <- chrom1A.div.small[which(chrom1A.div.small$SNP > 3400),]
+
+quartz(height=5,width=7)
+options(scipen=999)
+par(mfrow=c(2,1))
+par(mar=c(0,2,0.5,2))
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1)
+axis(side=2,ylim=c(-0.2,0.4))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.03))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$PI_AU, col="#F8DD9E", lwd=2)
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$PI_US, col="#66A3C0", lwd=2)
+axis(side=4, ylim=c(0,0.03))
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$PI_UK, col="#39C855", lwd=1)
+par(mar=c(1,2,1,2))
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,3.4))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$TajimaD_US, col="#2c81a8",lwd=2)
+par(new=T)
+plot((chrom1A.div.small$BIN_START), chrom1A.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom1A.div.small$BIN_START), chrom1A.div.small$TajimaD_UK, col="#39C855", lwd=1)
+axis(side=2, ylim=c(-2.4,3.4))
+axis(side=1)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome1A.ManhattanZoom.pdf", type="pdf")
+```
+
+
+
+#### Chromosome 4
+
+```{r } 
+chrom4.div <- div[which(div$CHROM==4),]
+# 13506 to 14923,
+# 1417 windows, 7 ticks - peak ~500 windows from start 
+
+chrom4.div.small <- chrom4.div[which(chrom4.div$SNP < 14200),]
+chrom4.div.small <- chrom4.div.small[which(chrom4.div.small$SNP > 13800),]
+
+quartz(height=5,width=7)
+options(scipen=999)
+par(mfrow=c(2,1))
+par(mar=c(0,2,0.5,2))
+plot((chrom4.div.small$BIN_START), chrom4.div.small$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1)
+axis(side=2,ylim=c(-0.2,0.4))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.03))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$PI_AU, col="#F8DD9E", lwd=2)
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$PI_US, col="#66A3C0", lwd=2)
+axis(side=4, ylim=c(0,0.03))
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$PI_UK, col="#39C855", lwd=1)
+par(mar=c(1,2,1,2))
+plot((chrom4.div.small$BIN_START), chrom4.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,3.4))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$TajimaD_US, col="#2c81a8",lwd=2)
+par(new=T)
+plot((chrom4.div.small$BIN_START), chrom4.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom4.div.small$BIN_START), chrom4.div.small$TajimaD_UK, col="#39C855", lwd=1)
+
+axis(side=2, ylim=c(-2.4,3.4))
+axis(side=1)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome4.ManhattanZoom.pdf", type="pdf")
+```
+
+
+#### Chromosome 4A
+
+```{r } 
+chrom4A.div <- div[which(div$CHROM==4.5),]
+# 13097 to 13505
+# 408 windows, 4 ticks
+
+chrom4A.div.small <- chrom4A.div[which(chrom4A.div$SNP < 13350),]
+chrom4A.div.small <- chrom4A.div.small[which(chrom4A.div.small$SNP > 13100),]
+
+quartz(height=5,width=7)
+options(scipen=999)
+par(mfrow=c(2,1))
+par(mar=c(0,2,0.5,2))
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.2,0.4))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$WEIGHTED_FST_USAU, col="grey50", lwd=1)
+axis(side=2,ylim=c(-0.2,0.4))
+abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
+abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.03))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$PI_AU, col="#F8DD9E", lwd=2)
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$PI_US, col="#66A3C0", lwd=2)
+axis(side=4, ylim=c(0,0.03))
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$PI_UK, col="#39C855", lwd=1)
+par(mar=c(1,2,1,2))
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,3.4))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$TajimaD_US, col="#2c81a8",lwd=2)
+par(new=T)
+plot((chrom4A.div.small$BIN_START), chrom4A.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.4))
+lines((chrom4A.div.small$BIN_START), chrom4A.div.small$TajimaD_UK, col="#39C855", lwd=1)
+axis(side=2, ylim=c(-2.4,3.4))
+axis(side=1)
+quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome4A.ManhattanZoom.pdf", type="pdf")
+```

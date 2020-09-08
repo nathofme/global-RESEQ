@@ -1,0 +1,63 @@
+---
+title: "Population Structure"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r packages, message=FALSE}
+library(RColorBrewer)
+library(SNPRelate)
+library(gdsfmt)
+library(scales)
+library(ggplot2)
+```
+
+
+Convert SNPs to binary format (gdsfmt or Genomic Data Structure data files) - accelerates computation
+```{r }
+snpgdsVCF2GDS(vcf.fn="/EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.vcf", out.fn="EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds",method = c("biallelic.only"),compress.annotation="ZIP.max", snpfirstdim=FALSE, verbose=TRUE)
+snpgdsSummary("EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds")
+
+genofile <- snpgdsOpen("EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds")
+closefn.gds("EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds")
+miss <- snpgdsSampMissRate(genofile, sample.id=NULL, snp.id=NULL, with.id=TRUE)
+miss
+summary(miss)
+```
+
+
+```{r }
+pca <- snpgdsPCA(gdsobj = genofile,autosome.only=FALSE,snp.id=snpset.id)
+pc.percent <- pca$varprop*100
+head(round(pc.percent, 2))
+pcatab <- data.frame(sample.id = pca$sample.id,
+                     EV1 = pca$eigenvect[,1],    # the first eigenvector
+                     EV2 = pca$eigenvect[,2],    # the second eigenvector
+                     stringsAsFactors = FALSE)
+head(pcatab)
+```
+
+
+```{r }
+plot(pcatab$EV2, pcatab$EV1, xlab="eigenvector 2", ylab="eigenvector 1")
+population <- c("AU","AU","AU","AU","AU","AU","AU","AU","UK","UK","UK","UK","UK","UK","UK","UK","US","US","US","US","US","US","US")
+individual <- c("au1","au2","au3","au4","au5","au6","au7","au8","uk1","uk2","uk3","uk4","uk5","uk6","uk7","uk8","us1","us2","us4","us5","us6","us7","us8")
+pcatab2 <- cbind(pcatab,population,individual)
+pcatab3d <- cbind(pcatab3d,population,individual)
+```
+
+
+```{r }
+palette(c("#F2C14E","#39C855","#2c81a8"))
+colors<-c("#F2C14E","#39C855","#2c81a8")
+as.factor(pcatab3d$population)
+pdf("strictPCA.pdf",height=5,width=4.5)
+plot(pcatab2$EV1, pcatab2$EV2, xlab="PC1 6.35%", ylab="PC2 5.23%",pch=21,col="black",bg=pcatab2$population,cex=1,main="PCA 22,713 unlinked SNPs")
+#with(pcatab2,text(pcatab2$EV1, pcatab2$EV2,labels=pcatab2$individual,pos=3,cex=0.8))
+legend("bottomright",legend=levels(pcatab2$population),pch=21,cex=1,col=c("black"),pt.bg=colors,bty="n")
+dev.off()
+```
