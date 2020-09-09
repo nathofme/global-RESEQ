@@ -192,6 +192,20 @@ summary(div.outliers.USUK$TajimaD_US)
 summary(div.outliers.USUK$TajimaD_UK)
 ```
 
+```{r fitting distributions in outliers}
+library(fitdistrplus)
+descdist(div.outliers.AUUK$PI_UK)
+descdist(div.outliers.AUUK$PI_AU)
+descdist(div.outliers.USUK$PI_UK)
+descdist(div.outliers.USUK$PI_US)
+
+#beta.outliers.AUUK <- fitdist(div.outliers.AUUK$PI_AU, "beta")
+#summary(beta.outliers.AUUK)
+
+#beta.outliers.USUK <- fitdist(div.outliers.USUK$PI_US, "beta")
+#summary(beta.outliers.USUK)
+```
+
 ```{r low diff among invasions at outliers}
 div.outliers.AUUK.lowFstUSAU <- div.outliers.AUUK[which(div.outliers.AUUK$WEIGHTED_FST_USAU < 0.01 ),] 
 div.outliers.AUUK.lowFstUSAU
@@ -235,11 +249,54 @@ ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
   geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
 ```
 
+```{r Fst vs pi overall}
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_UKUS, y=div$PI_US),col="#2c81a8",cex=0.7) +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  xlab("") + ylab("") +
+  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=PI_US),method="loess",col="black",lwd=0.5) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic()
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.USUK.pdf",height=2,width=2)
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_UKUS, y=div$PI_US),col="#2c81a8",cex=0.7) +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  xlab("") + ylab("") +
+  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=PI_US),method="loess",col="black",lwd=0.5) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic()
+dev.off()
 
-```{r histogram of pi}
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_AUUK, y=div$PI_AU),col="#F2C14E",cex=0.7) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic() +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=PI_AU),method="loess",col="black",lwd=0.5) +
+  xlab("") + ylab("")
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.AUUK.pdf",height=2,width=2)
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_AUUK, y=div$PI_AU),col="#F2C14E",cex=0.7) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic() +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=PI_AU),method="loess",col="black",lwd=0.5) +
+  xlab("") + ylab("")
+dev.off()
+```
+
+```{r dist and histogram of pi overall}
 summary(div$PI_AU)
 summary(div$PI_UK)
 summary(div$PI_US)
+
+descdist(div$PI_US)
+#norm.piUS.fit <- fitdist(div$PI_US,distr="norm")
+#summary(norm.piUS.fit)
+
+descdist(div$PI_UK)
+#norm.piUK.fit <- fitdist(div$PI_UK,distr="norm")
+#summary(norm.piUK.fit)
+
+descdist(div$PI_AU)
+#norm.piAU.fit <- fitdist(div$PI_AU,distr="norm")
+#summary(norm.piAU.fit)
 
 lab.AU <- rep("AU",length(div$PI_AU))
 lab.US <- rep("US",length(div$PI_US))
@@ -327,6 +384,19 @@ ggplot(data=div.outliers.AUUK) +
 dev.off()
 ```
 
+
+
+```{r dist of Tajima D overall}
+descdist(div$TajimaD_US)
+descdist(div$TajimaD_UK)
+descdist(div$TajimaD_AU)
+
+descdist(div.outliers.USUK$TajimaD_US)
+descdist(div.outliers.AUUK$TajimaD_AU)
+
+```
+
+
 # Step 4: What's the impact of the genetic bottlenecks and subsequent expansion on genetic diversity in each invasion?
 
 What's the difference in diversity between native and invasive ranges?
@@ -348,13 +418,23 @@ div.hiUKpi.both <- div.hiUKpi.vsAU[which(div$piUK.piUS > 0),]
 length(div.hiUKpi.vsAU$piUK.piAU)/length(div$piUK.piAU) # % of windows that have higher pi in native
 length(div.hiUKpi.vsUS$piUK.piUS)/length(div$piUK.piUS) 
 length(div.hiUKpi.both$piUK.piUS)/length(div$piUK.piUS) # % of windows with higher pi in both invasive ranges
+```
 
-div.hifst.AUUK$piUK.piAU <- div.hifst.AUUK$PI_UK - div.hifst.AUUK$PI_AU
-div.hifst.UKUS$piUK.piUS <- div.hifst.UKUS$PI_UK - div.hifst.UKUS$PI_US
+
+If drift acting on novel mutations explains most of the differentiation, then where FST is high, diversity should also be higher in the invasions. Could also be due to weaker purifying selection during population expansion.
+```{r }
+div.hifst.AUUK$piUK.piAU <- div.hifst.AUUK$PI_UK - div.hifst.AUUK$PI_AU # UK vs AU in high fst regions only
 summary(div.hifst.AUUK$piUK.piAU)
+div.hifst.AUUK.hiUKpi <- div.hifst.AUUK[which(div.hifst.AUUK$piUK.piAU > 0),]
+length(div.hifst.AUUK.hiUKpi$piUK.piAU)/length(div.hifst.AUUK$piUK.piAU) # % of windows that have higher pi in native
+
+div.hifst.UKUS$piUK.piUS <- div.hifst.UKUS$PI_UK - div.hifst.UKUS$PI_US # UK vs US in high fst regions only
 summary(div.hifst.UKUS$piUK.piUS)
+div.hifst.UKUS.hiUKpi <- div.hifst.UKUS[which(div.hifst.UKUS$piUK.piUS > 0),]
+length(div.hifst.UKUS.hiUKpi$piUK.piUS)/length(div.hifst.UKUS$piUK.piUS) 
 
-
+div.hiUKpi.both <- div.hifst.UKUS.hiUKpi[which(div.hifst.AUUK.hiUKpi$piUK.piUS > 0),]
+length(div.hiUKpi.both$piUK.piUS)
 
 ```
 

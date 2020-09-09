@@ -19,7 +19,7 @@ library(ggplot2)
 
 Convert SNPs to binary format (gdsfmt or Genomic Data Structure data files) - accelerates computation
 ```{r }
-snpgdsVCF2GDS(vcf.fn="/EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.vcf", out.fn="EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds",method = c("biallelic.only"),compress.annotation="ZIP.max", snpfirstdim=FALSE, verbose=TRUE)
+snpgdsVCF2GDS(vcf.fn="/EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.vcf.recode.vcf", out.fn="EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.gds",method = c("biallelic.only"),compress.annotation="ZIP.max", snpfirstdim=FALSE, verbose=TRUE)
 snpgdsSummary("EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds")
 
 genofile <- snpgdsOpen("EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.gds")
