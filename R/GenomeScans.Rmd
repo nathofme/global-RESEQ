@@ -226,9 +226,11 @@ Possible parallel "selection" ?
 
 What's the statistical distribution of these values?
 ```{r histogram of Fst}
-summary(div$WEIGHTED_FST_AUUK)
-summary(div$WEIGHTED_FST_UKUS)
-summary(div$WEIGHTED_FST_USAU)
+
+descdist(div$WEIGHTED_FST_AUUK)
+descdist(div$WEIGHTED_FST_UKUS)
+descdist(div$WEIGHTED_FST_USAU)
+
 lab.AU <- rep("AU.UK",length(div$WEIGHTED_FST_AUUK))
 lab.US <- rep("UK.US",length(div$WEIGHTED_FST_UKUS))
 Fst.group <- c(lab.AU,lab.US)
@@ -548,7 +550,7 @@ ggplot(data=div) +
   guides(col = guide_legend(label = TRUE, label.position = "bottom", 
                            direction = "horizontal"))
 
-pdf("FstPi.density.pdf",height=5,width=5)
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.pdf",height=5,width=5)
 ggplot(data=div) +
   geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
   geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
