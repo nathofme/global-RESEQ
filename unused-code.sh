@@ -322,3 +322,22 @@ cp /home/nrh44/EUST_RESEQ_2017/OtherAnalyses/Relate/EUSTreseq.poplabels /workdir
      -o EUSTreseq_selection \
      -m 1e-9 \
      --years_per_gen 4 \
+
+
+
+
+
+
+
+
+     ############################## DEMOGRAPHY ###############################################
+
+
+     ### stairway plot with pop-specific SFS from Martin script
+     export CLASSPATH=~/Applications/stairway_plot_v2/stairway_plot_es
+     echo $CLASSPATH
+
+     java -cp stairway_plot_es Stairbuilder eustreseq_US_fold.blueprint &
+     # SFS shall have nseq/2 error
+     bash eustrad_fold.blueprint.sh # in stairway_plot_v2beta2 directory!
+     bash eustrad_fold.blueprint.plot.sh
