@@ -21,7 +21,8 @@ bash sedPseudRename.sh &> rename.log &
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --freq --out EUSTreseq.pseudochrom.allconf.filtered &> freq.log &
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --relatedness --out EUSTreseq.pseudochrom.allconf.filtered &> rel.log &
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --het --out EUSTreseq.pseudochrom.allconf.filtered &> het.log &
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --depth -c > EUSTreseq_depthsummary.txt &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --depth -c > EUSTreseq.pseudochrom.allconf.filtered.depthsummary.txt &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --hardy --max-missing 1.0 --out EUSTreseq.pseudochrom.allconf.filtered &> hardy.log &
 
 # fst in vcftools
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --fst-window-size 50000 --weir-fst-pop us.txt --weir-fst-pop uk.txt --out EUSTreseq_pseud_nostep_UKUS_50kb &
@@ -50,43 +51,66 @@ vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --indv uk1_sort --indv
 
 # scans using Simon Martin's scripts
 gzip EUSTreseq.pseudochrom.allconf.filtered.vcf &
-python parseVCF.2018.py -i EUSTreseq.pseudochrom.allconf.filtered.vcf.gz --skipIndels --minQual 30 --gtf flag=DP min=5 | gzip > EUSTreseq.pseudochrom.allconf.geno.gz &
-python popgenWindows.py --windType coordinate -w 50000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window50kb.gz -f phased -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows50kb..log &
-python popgenWindows.py --windType coordinate -w 50000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window50kb.m10.gz -f phased -T 5 -m 10 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows50kb.m10.log &
-python popgenWindows.py --windType coordinate -w 10000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window10kb.gz -f phased -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows10kb.log &
-python popgenWindows.py --windType coordinate -w 10000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window10kb.m10.gz -f phased -m 10 -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows10kb.m10.log &
+python parseVCF.2018.py -i EUSTreseq.pseudochrom.allconf.filtered.vcf.gz --skipIndels --minQual 30 --gtf flag=DP min=2 | gzip > EUSTreseq.pseudochrom.allconf.geno.gz &
+# keep DP at 2 to match vcftools above
+python popgenWindows.py --windType coordinate -w 50000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window50kb.gz -f phased -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us3_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows50kb..log &
+python popgenWindows.py --windType coordinate -w 50000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window50kb.m10.gz -f phased -T 5 -m 10 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us3_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows50kb.m10.log &
+python popgenWindows.py --windType coordinate -w 10000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window10kb.gz -f phased -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us3_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows10kb.log &
+python popgenWindows.py --windType coordinate -w 10000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window10kb.m10.gz -f phased -m 10 -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us3_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows10kb.m10.log &
+
+## error here:
+# Traceback (most recent call last):
+#   File "popgenWindows.py", line 253, in <module>
+#     if not args.addWindowID: outFile.write("scaffold,start,end,mid,sites,")
+#   File "/usr/lib64/python3.6/gzip.py", line 260, in write
+#     data = memoryview(data)
+# TypeError: memoryview: a bytes-like object is required, not 'str'
 
 
 ##################### POPULATION STRUCTURE PREP #####################
 
-### bi-allelic SNPs && minor allele count of 4
+### remove invariant sites
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --non-ref-ac-any 1 --recode --out EUSTreseq.pseudochrom.allconf.filtered.variantonly.vcf &> vcftools-variantonly.log &
+### After filtering, kept 23435321 out of a possible 23435321 Sites
+### so filtering above had already removed invariant sites...?
+
+### bi-allelic SNPs
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --min-alleles 2 --max-alleles 2 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.vcf &> vcftools-biallelic.log &
-### After filtering, kept 11913445 out of a possible 12098699 Sites
-### 8.6G
+### After filtering, kept 22648569 out of a possible 23435321 Sites
+### 15G
 
---mac 4 #minor allele count > 4
+### hwe filter
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --hwe 0.05 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.hwe.vcf &> vcftools-hwefilter.log &
+### After filtering, kept 22002700 out of a possible 22648569 Sites
+### 14G
 
+### minor allele count > 2
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --mac 2 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.mac2.vcf &> vcftools-mac2.log &
+### After filtering, kept 17038208 out of a possible 22648569 Sites
+### 11G
 
-### maf filter
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --maf 0.1 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.vcf &> vcftools-maf01.log &
-### After filtering, kept 10388332 out of a possible 11913445 Sites
-### 7.5G
+### minor allele count > 4
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --mac 4 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.vcf &> vcftools-mac4.log &
+### After filtering, kept 11913445 out of a possible 22648569 Sites
+### 7.9G
 
 ### pruning for LD
-# convert VCF to BCF, while filtering out all variants except biallelic SNPs
-bcftools view EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.vcf -m2 -M2 -v snps -Ou -o EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.bcf &
-# prune every 1 kb
-bcftools +prune -l 0.6 -w 1000 EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.bcf -Ob -o EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf &
-bcftools view EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf -Ou -o EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.vcf &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.vcf --thin 1000 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.prune1kb.vcf &> vcftools-mac4-prune1kb.log &
+### After filtering, kept 833481 out of a possible 11913445 Sites
+### 531 MB
+
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.mac2.vcf --thin 1000 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.mac2.prune1kb.vcf &> vcftools-mac2-prune1kb.log &
+### After filtering, kept 872155 out of a possible 17038208 Sites
+### 545 MB
+
+# re-running pop gen calculations
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --freq --out EUSTreseq.pseudochrom.allconf.filtered.biall &> freq.log &
 
 
-### stopped here on 9/4/20 3:30 PM
-### Error: Unrecognized type in .bcf file.
-### I think I fucked up MAF filtering here by accidentally overwriting file.
 
 ### admixture
-/programs/plink-1.9-x86_64-beta5/plink --bcf EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb --recode --allow-extra-chr &
-/programs/plink-1.9-x86_64-beta5/plink --file EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb --make-bed --allow-extra-chr --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb &
+/programs/plink-1.9-x86_64-beta5/plink --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.prune1kb.vcf --out EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.prune1kb --recode --allow-extra-chr --chr-set 29 no-y &
+/programs/plink-1.9-x86_64-beta5/plink --file EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.prune1kb --make-bed --out EUSTreseq.pseudochrom.allconf.filtered.biall.mac4.prune1kb --allow-extra-chr --chr-set 29 no-y  &
 
 /programs/admixture/admixture EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bed 1 -B -j4 &> admix.k1.prune1kb.log &
 /programs/admixture/admixture EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bed 2 -B -j4 &> admix.k2.prune1kb.log &

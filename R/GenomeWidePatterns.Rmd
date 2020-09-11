@@ -18,9 +18,14 @@ div.hifst.AUUK <- div[which(div$WEIGHTED_FST_AUUK > 0.1),]
 div.hifst.UKUS <- div[which(div$WEIGHTED_FST_UKUS > 0.1),]
 ```
 
-## Histograms of FST, pi
+## Basic pop gen stats
+```{r }
+frq <- read.csv(file="Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq.pseudochrom.allconf.filtered.biall.frq.csv",sep="\t")
+```
 
-What's the statistical distribution of these values?
+
+## Distribution of Fst 
+
 ```{r histogram of Fst}
 descdist(div$WEIGHTED_FST_AUUK)
 descdist(div$WEIGHTED_FST_UKUS)
@@ -49,6 +54,8 @@ ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
   geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
   geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
 ```
+
+## Scatterplot of FST vs pi
 
 ```{r Fst vs pi overall}
 ggplot(data=div) +
@@ -80,6 +87,8 @@ ggplot(data=div) +
   xlab("") + ylab("")
 dev.off()
 ```
+
+## Distribution of pi 
 
 ```{r dist and histogram of pi overall}
 summary(div$PI_AU)
@@ -119,6 +128,8 @@ ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
 dev.off()
 ```
 Average nucleotide diversity for both invasions is the same (0.003). There are two vertical lines overlaid in the plot above.
+
+## Scatterplot of pi UK vs. pi invasive
 
 ```{r scatterplots of pi}
 ggplot(data=div) +
@@ -176,6 +187,8 @@ ggplot(data=div.outliers.AUUK) +
 dev.off()
 ```
 
+## Distributions of Tajima's D
+
 ```{r dist of Tajima D overall}
 descdist(div$TajimaD_US)
 descdist(div$TajimaD_UK)
@@ -220,6 +233,7 @@ dev.off()
 
 
 #### Plotting high-fst (FST > 0.1) windows only
+
 ```{r histogram of diff in diversity with hi fst}
 lab.AU <- rep("AU",length(div.hifst.AUUK$piUK.piAU))
 lab.US <- rep("US",length(div.hifst.UKUS$piUK.piUS))
@@ -253,6 +267,8 @@ dev.off()
 
 
 Are regions with novel pi also highly differentiated? Expect this scatterplot to look bimodal, where shifts in diversity in either direction led to differentiation between populations.
+
+## Scatterplot of FST vs. diff in pi
 
 ```{r scatterplot FST vs diff in diversity}
 ggplot(data=div) +
@@ -291,7 +307,8 @@ dev.off()
 #dev.off()
 ```
 
-What's going on with diversity & TajD at outliers?
+## Distribution of Pi and TajD at outliers
+
 ```{r fitting distributions in outliers}
 library(fitdistrplus)
 descdist(div.outliers.AUUK$PI_UK)

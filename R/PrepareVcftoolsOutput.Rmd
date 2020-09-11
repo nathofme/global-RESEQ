@@ -116,7 +116,7 @@ div$piUK.piUS <- div$PI_UK - div$PI_US
 
 Write these tables to a file for access by other scripts.
 ```{r write to file}
-write.csv(div,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.MAC4.csv")
+write.csv(div,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.csv")
 ```
 
 Now we're ready to plot and calculate genome-wide values!

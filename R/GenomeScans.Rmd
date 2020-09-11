@@ -15,7 +15,7 @@ library(scales)
 ```
 
 ```{r read in data}
-div <- read.csv(file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.MAC4.csv")
+div <- read.csv(file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.csv")
 ```
 
 # Exploring genetic variation
@@ -287,7 +287,7 @@ quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chro
 
 #### Chromosome 6
 
-```{r make chrom 6 div table}
+```{r chrom 6}
 chrom6.div <- div[which(div$CHROM==6),]
 # runs from 16155 to 16871
 # chrom 6 = 716 50kb windows ("SNPs" here)
@@ -301,8 +301,8 @@ manhattan(chrom6.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UK
           highlight=SNP.novelUSpi.hifstonly,
           cex=1,cex.axis=1)
 
-chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16350),]
-chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16200),]
+chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16400),]
+chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16100),]
 
 head(chrom6.div.small)
 
@@ -319,13 +319,6 @@ mean(chrom6.div.hifst$PI_AU)
 chrom6.div.med <- chrom6.div[which(chrom6.div$SNP < 16450),]
 chrom6.div.med <- chrom6.div.med[which(chrom6.div.med$SNP > 16155),]
 
-
-```
-
-
-
-
-```{r plotting Chrom 6}
 quartz(height=5,width=7)
 options(scipen=999)
 par(mfrow=c(2,1))
