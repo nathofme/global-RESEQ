@@ -1,17 +1,17 @@
 
 
 
-vcftools --vcf EUSTreseq.pseudochrom.allconf.flagged.vcf --max-missing 0.8 --mac 4 --min-meanDP 2 --max-meanDP 50 --recode --remove-filtered-all --out EUSTreseq.pseudochrom.allconf.filtered.vcf &> vcftools-filter.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.flagged.vcf --max-missing 0.8 --min-meanDP 2 --max-meanDP 50 --recode --remove-filtered-all --out EUSTreseq.pseudochrom.allconf.filtered.vcf &> vcftools-filter.log &
 
---mac 4 #minor allele count > 4
 --min-meanDP 2 # probably already caught in GATK, but we don't wanna mess things up here
 --max-meanDP 50 #Avoid repetitive areas
 --max-missing-count 4 #about 20% missing data
 --max-missing 0.8 # 80% missing data, might duplicate --mac above but... can't be too safe here!
 --remove-filtered-all # reads and discards flagged sites from GATK VariantFiltration
 
-# After filtering, 12098699 of 27546565 Sites
-# CHECK YOUR FILE SIZE! 26G originally, 8.8G now
+# After filtering, 23,435,321 of 27,546,565 Sites
+# Removes 4,111,244 sites
+# CHECK YOUR FILE SIZE! 26G originally, 17G now
 
 ### rename chromosome labels so that they're intelligible
 bash sedPseudRename.sh &> rename.log &
@@ -48,13 +48,24 @@ vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --indv au1_sort --indv
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --TajimaD 10000 --out EUSTreseq_pseudochrom_US_TajimaD_10kb &
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --TajimaD 10000 --out EUSTreseq_pseudochrom_UK_TajimaD_10kb &
 
+# scans using Simon Martin's scripts
+gzip EUSTreseq.pseudochrom.allconf.filtered.vcf &
+python parseVCF.2018.py -i EUSTreseq.pseudochrom.allconf.filtered.vcf.gz --skipIndels --minQual 30 --gtf flag=DP min=5 | gzip > EUSTreseq.pseudochrom.allconf.geno.gz &
+python popgenWindows.py --windType coordinate -w 50000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window50kb.gz -f phased -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows50kb..log &
+python popgenWindows.py --windType coordinate -w 50000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window50kb.m10.gz -f phased -T 5 -m 10 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows50kb.m10.log &
+python popgenWindows.py --windType coordinate -w 10000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window10kb.gz -f phased -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows10kb.log &
+python popgenWindows.py --windType coordinate -w 10000 -g EUSTreseq.pseudochrom.allconf.geno.gz -o EUSTreseq.pseudochrom.window10kb.m10.gz -f phased -m 10 -T 5 -p AU au1_sort,au2_sort,au3_sort,au4_sort,au5_sort,au6_sort,au7_sort,au8_sort -p UK uk1_sort,uk2_sort,uk3_sort,uk4_sort,uk5_sort,uk6_sort,uk7_sort,uk8_sort -p US us1_sort,us2_sort,us4_sort,us5_sort,us6_sort,us7_sort,us8_sort &> popGenwindows10kb.m10.log &
+
 
 ##################### POPULATION STRUCTURE PREP #####################
 
-### bi-allelic SNPs only
+### bi-allelic SNPs && minor allele count of 4
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.vcf --min-alleles 2 --max-alleles 2 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.vcf &> vcftools-biallelic.log &
 ### After filtering, kept 11913445 out of a possible 12098699 Sites
 ### 8.6G
+
+--mac 4 #minor allele count > 4
+
 
 ### maf filter
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --maf 0.1 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.vcf &> vcftools-maf01.log &
@@ -71,6 +82,7 @@ bcftools view EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf -O
 
 ### stopped here on 9/4/20 3:30 PM
 ### Error: Unrecognized type in .bcf file.
+### I think I fucked up MAF filtering here by accidentally overwriting file.
 
 ### admixture
 /programs/plink-1.9-x86_64-beta5/plink --bcf EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb.bcf --out EUSTreseq.pseudochrom.allconf.filtered.biall.maf01.prune1kb --recode --allow-extra-chr &

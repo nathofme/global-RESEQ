@@ -212,12 +212,16 @@ descdist(div.outliers.USUK$PI_US)
 ```
 
 ```{r low diff among invasions at outliers}
+
 div.outliers.AUUK.lowFstUSAU <- div.outliers.AUUK[which(div.outliers.AUUK$WEIGHTED_FST_USAU < 0.01 ),] 
-div.outliers.AUUK.lowFstUSAU
+unique(div.outliers.AUUK.lowFstUSAU$CHROM)
 length(div.outliers.AUUK.lowFstUSAU$SNP)
+
 div.outliers.USUK.lowFstUSAU <- div.outliers.USUK[which(div.outliers.USUK$WEIGHTED_FST_USAU < 0.01 ),] 
-div.outliers.USUK.lowFstUSAU
+unique(div.outliers.USUK.lowFstUSAU$CHROM)
 length(div.outliers.USUK.lowFstUSAU$SNP)
+
+intersect(unique(div.outliers.AUUK.lowFstUSAU$CHROM),unique(div.outliers.USUK.lowFstUSAU$CHROM))
 
 ```
 Possible parallel "selection" ?
@@ -675,8 +679,9 @@ unique(div.outliers.hiUSpi$CHROM)
 The plots below are based on code from Gemma Clucas.
 
 #### Chromosome 2
-``` {r }
+``` {r manhattan of chrom 2 }
 chrom2.div <- div[which(div$CHROM==2),]
+length(chrom2.div$SNP) # how many windows total (need for calculating distance to centromere)
 
 manhattan(chrom2.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_AUUK", 
           ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
@@ -716,16 +721,17 @@ axis(side=4, ylim=c(0,0.04))
 par(new=T)
 plot((chrom2.div.small$BIN_START), chrom2.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
 lines((chrom2.div.small$BIN_START), chrom2.div.small$PI_UK, col="#39C855", lwd=1)
+abline(v=76290000, col="black", lwd=0.5) # centromere position
 par(mar=c(1,2,1,2))
-plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,2.6))
+plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,3.2))
 lines((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_AU, col="#F2C14E", lwd=2)
 par(new=T)
-plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.6))
+plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.2))
 lines((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_US, col="#2c81a8",lwd=2)
 par(new=T)
-plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.6))
+plot((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_UK, type="n", xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,3.2))
 lines((chrom2.div.small$BIN_START), chrom2.div.small$TajimaD_UK, col="#39C855", lwd=1)
-axis(side=2, ylim=c(-2.4,2.4)) # tajima's D axis
+axis(side=2, ylim=c(-2.4,3.2)) # tajima's D axis
 axis(side=1)
 quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Chromosome2.ManhattanZoom.pdf", type="pdf")
 ```
@@ -747,8 +753,8 @@ manhattan(chrom6.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UK
           highlight=SNP.novelUSpi.hifstonly,
           cex=1,cex.axis=1)
 
-chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16325),]
-chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16225),]
+chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16350),]
+chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16200),]
 
 head(chrom6.div.small)
 
@@ -804,7 +810,7 @@ par(new=T)
 plot((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.4))
 lines((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_US, col="#2c81a8",lwd=2)
 par(new=T)
-plot((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.4))
+plot((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_UK, type="n", xlab=NA, ylab=NA,  bty="n", ylim=c(-2.4,2.4))
 lines((chrom6.div.small$BIN_START), chrom6.div.small$TajimaD_UK, col="#39C855", lwd=1)
 axis(side=2, ylim=c(-2.4,2.4))
 axis(side=1)
@@ -832,8 +838,9 @@ quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/manh
 
 #### Chromosome 1
 
-```{r } 
+```{r manhattan of chrom 1} 
 chrom1.div <- div[which(div$CHROM==1),]
+length(chrom1.div$SNP)
 
 manhattan(chrom1.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_AUUK", 
           ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
