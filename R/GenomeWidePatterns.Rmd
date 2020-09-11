@@ -1,0 +1,314 @@
+---
+title: "HistogramsScatterplots"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(fitdistrplus)
+library(ggplot2)
+```
+
+
+```{r read in files}
+div <- read.csv(file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.MAC4.csv")
+div.outliers.USUK <- read.csv(file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstOutliers.USUK.csv")
+div.outliers.AUUK <- read.csv(file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstOutliers.AUUK.csv")
+div.hifst.AUUK <- div[which(div$WEIGHTED_FST_AUUK > 0.1),]
+div.hifst.UKUS <- div[which(div$WEIGHTED_FST_UKUS > 0.1),]
+```
+
+## Histograms of FST, pi
+
+What's the statistical distribution of these values?
+```{r histogram of Fst}
+descdist(div$WEIGHTED_FST_AUUK)
+descdist(div$WEIGHTED_FST_UKUS)
+descdist(div$WEIGHTED_FST_USAU)
+lab.AU <- rep("AU.UK",length(div$WEIGHTED_FST_AUUK))
+lab.US <- rep("UK.US",length(div$WEIGHTED_FST_UKUS))
+Fst.group <- c(lab.AU,lab.US)
+Fst.hist.data <- c(div$WEIGHTED_FST_AUUK,div$WEIGHTED_FST_USUK)
+Fst.hist <- data.frame(Fst = Fst.hist.data, population = Fst.group)
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_Fst.pdf",width=4,height=3)
+ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
+  theme_classic() +
+  geom_density(alpha=0.5,lwd=0.5) +
+  scale_fill_manual(values=c("#F2C14E","#2c81a8")) + xlim(0,0.5) + 
+  xlab("Fst") + labs(fill="Population") + 
+  geom_vline(xintercept=0.03,colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
+dev.off()
+ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
+  theme_classic() +
+  geom_density(alpha=0.5,lwd=0.5) +
+  scale_fill_manual(values=c("#F2C14E","#2c81a8")) + xlim(0,0.5) + 
+  xlab("Fst") + labs(fill="Population") + 
+  geom_vline(xintercept=0.03,colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
+```
+
+```{r Fst vs pi overall}
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_UKUS, y=div$PI_US),col="#2c81a8",cex=0.7) +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  xlab("") + ylab("") +
+  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=PI_US),method="loess",col="black",lwd=0.5) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic()
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.USUK.pdf",height=2,width=2)
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_UKUS, y=div$PI_US),col="#2c81a8",cex=0.7) +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  xlab("") + ylab("") +
+  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=PI_US),method="loess",col="black",lwd=0.5) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic()
+dev.off()
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_AUUK, y=div$PI_AU),col="#F2C14E",cex=0.7) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic() +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=PI_AU),method="loess",col="black",lwd=0.5) +
+  xlab("") + ylab("")
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.AUUK.pdf",height=2,width=2)
+ggplot(data=div) +
+  geom_point(aes(x=div$WEIGHTED_FST_AUUK, y=div$PI_AU),col="#F2C14E",cex=0.7) +
+  xlim(0,0.31) + ylim(0,0.04) + theme_classic() +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=PI_AU),method="loess",col="black",lwd=0.5) +
+  xlab("") + ylab("")
+dev.off()
+```
+
+```{r dist and histogram of pi overall}
+summary(div$PI_AU)
+summary(div$PI_UK)
+summary(div$PI_US)
+descdist(div$PI_US)
+#norm.piUS.fit <- fitdist(div$PI_US,distr="norm")
+#summary(norm.piUS.fit)
+descdist(div$PI_UK)
+#norm.piUK.fit <- fitdist(div$PI_UK,distr="norm")
+#summary(norm.piUK.fit)
+descdist(div$PI_AU)
+#norm.piAU.fit <- fitdist(div$PI_AU,distr="norm")
+#summary(norm.piAU.fit)
+lab.AU <- rep("AU",length(div$PI_AU))
+lab.US <- rep("US",length(div$PI_US))
+lab.UK <- rep("UK",length(div$PI_UK))
+group <- c(lab.AU,lab.US,lab.UK)
+pi.hist.data <- c(div$PI_UK,div$PI_US,div$PI_AU)
+pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
+str(pi.hist.lab)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("black","#2c81a8","#F2C14E")) + xlim(-0.0001,0.02) + 
+  xlab("Pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div$PI_AU),colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  geom_vline(xintercept=mean(div$PI_US),colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  theme(legend.position="none")
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_Pi.pdf",width=4,height=3)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("black","#2c81a8","#F2C14E")) + xlim(-0.0001,0.02) + 
+  xlab("Pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div$PI_US),colour=alpha("#2c81a8"),linetype="dashed", size=1) +
+  geom_vline(xintercept=mean(div$PI_AU),colour=alpha("#F2C14E"),linetype="dashed", size=1) +
+  theme(legend.position="none")
+dev.off()
+```
+Average nucleotide diversity for both invasions is the same (0.003). There are two vertical lines overlaid in the plot above.
+
+```{r scatterplots of pi}
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
+  xlab("") + ylab("") + xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_USvsUK.pdf",width=2,height=2)
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
+  xlab("") + ylab("") + xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
+dev.off()
+ggplot(data=div.outliers.USUK) +
+  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
+  xlab("") + ylab("") + xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/PiOutliers_USvsUK.pdf",width=2,height=2)
+ggplot(data=div.outliers.USUK) +
+  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
+  xlab("") + ylab("") + xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
+dev.off()
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
+  xlab("") + ylab("") +
+  xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_AUvsUK.pdf",width=2,height=2)
+ggplot(data=div) +
+  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
+  xlab("") + ylab("") +
+  xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
+dev.off()
+ggplot(data=div.outliers.AUUK) +
+  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
+  xlab("") + ylab("") +
+  xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
+dev.off()
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_AUvsUK.pdf",width=2,height=2)
+ggplot(data=div.outliers.AUUK) +
+  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
+  xlab("") + ylab("") +
+  xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
+  theme(axis.text=element_text(size=7,colour="black")) +
+  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
+dev.off()
+```
+
+```{r dist of Tajima D overall}
+descdist(div$TajimaD_US)
+descdist(div$TajimaD_UK)
+descdist(div$TajimaD_AU)
+descdist(div.outliers.USUK$TajimaD_US)
+descdist(div.outliers.AUUK$TajimaD_AU)
+```
+
+
+## Differences in diversity 
+
+```{r histogram of diff in diversity}
+lab.AU <- rep("AU",length(div$piUK.piAU))
+lab.US <- rep("US",length(div$piUK.piUS))
+group <- c(lab.AU,lab.US)
+pi.hist.data <- c(div$piUK.piUS,div$piUK.piAU)
+pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
+str(pi.hist.lab)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_vline(xintercept=0,colour="black",size=0.5) +
+  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
+  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
+  xlab("Difference in pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
+  geom_vline(xintercept=mean(div$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
+  theme(legend.position="none")
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_PiDifference.pdf",width=4,height=3)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_vline(xintercept=0,colour="black",size=0.5) +
+  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
+  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
+  xlab("Difference in pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
+  geom_vline(xintercept=mean(div$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
+  theme(legend.position="none")
+dev.off()
+```
+
+
+#### Plotting high-fst (FST > 0.1) windows only
+```{r histogram of diff in diversity with hi fst}
+lab.AU <- rep("AU",length(div.hifst.AUUK$piUK.piAU))
+lab.US <- rep("US",length(div.hifst.UKUS$piUK.piUS))
+group <- c(lab.AU,lab.US)
+pi.hist.data <- c(div.hifst.UKUS$piUK.piUS,div.hifst.AUUK$piUK.piAU)
+pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
+str(pi.hist.lab)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_vline(xintercept=0,colour="black",size=0.5) +
+  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
+  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
+  xlab("Difference in pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div.hifst.AUUK$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
+  geom_vline(xintercept=mean(div.hifst.UKUS$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
+  theme(legend.position="none")
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_PiDifference_HiFst.pdf",width=4,height=3)
+ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
+  geom_vline(xintercept=0,colour="black",size=0.5) +
+  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
+  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
+  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
+  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
+  xlab("Difference in pi") + labs(fill="Population") +
+  geom_vline(xintercept=mean(div.hifst.AUUK$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
+  geom_vline(xintercept=mean(div.hifst.UKUS$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
+  theme(legend.position="none")
+dev.off()
+```
+
+
+Are regions with novel pi also highly differentiated? Expect this scatterplot to look bimodal, where shifts in diversity in either direction led to differentiation between populations.
+
+```{r scatterplot FST vs diff in diversity}
+ggplot(data=div) +
+  geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  xlab("") + ylab("") +
+  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),method="loess",col="black",lwd=0.5) +
+  xlim(0,0.31) + ylim(-0.002,0.002) + theme_classic()
+ggplot(data=div) +
+  geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
+  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
+  xlab("") + ylab("") +
+  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),method="loess",col="black",lwd=0.5) +
+  xlim(0,0.31) + ylim(-0.002,0.002) + theme_classic()
+ggplot(data=div) +
+  geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
+  geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
+  xlab("Fst (Native vs. Invasive)") + ylab("Pi Native - Pi Invasive") +
+  xlim(-0.01,0.41) + ylim(-0.003,0.003) + theme_bw() +
+  geom_density_2d(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU), colour="#ffffff") +
+  geom_density_2d(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS), colour="#2c81a8") +
+  guides(col = guide_legend(label = TRUE, label.position = "bottom", 
+                           direction = "horizontal"))
+pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.pdf",height=5,width=5)
+ggplot(data=div) +
+  geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
+  geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
+  xlab("Fst (Native vs. Invasive)") + ylab("Pi Native - Pi Invasive") +
+  xlim(-0.01,0.41) + ylim(-0.003,0.003) + theme_bw() +
+  geom_density_2d(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU), colour="#ffffff") +
+  geom_density_2d(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS), colour="#2c81a8") +
+  guides(col = guide_legend(label = TRUE, label.position = "bottom", 
+                           direction = "horizontal"))
+dev.off()
+#pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.USUK.pdf",height=2,width=2)
+#dev.off()
+```
+
+What's going on with diversity & TajD at outliers?
+```{r fitting distributions in outliers}
+library(fitdistrplus)
+descdist(div.outliers.AUUK$PI_UK)
+descdist(div.outliers.AUUK$PI_AU)
+descdist(div.outliers.USUK$PI_UK)
+descdist(div.outliers.USUK$PI_US)
+
+#beta.outliers.AUUK <- fitdist(div.outliers.AUUK$PI_AU, "beta")
+#summary(beta.outliers.AUUK)
+
+#beta.outliers.USUK <- fitdist(div.outliers.USUK$PI_US, "beta")
+#summary(beta.outliers.USUK)
+
+descdist(div.outliers.AUUK$TajimaD_AU)
+descdist(div.outliers.AUUK$TajimaD_UK)
+descdist(div.outliers.USUK$TajimaD_US)
+descdist(div.outliers.USUK$TajimaD_UK)
+
+```
+

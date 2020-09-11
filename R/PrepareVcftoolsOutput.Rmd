@@ -1,0 +1,123 @@
+---
+title: "Convert Vcftools output to table"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, message=FALSE}
+library(tidyverse)
+library(qqman)
+library(scales)
+```
+
+## Prepare files: join vcftools output into a single table.
+
+First, read in raw output files from vcftools (in this repo, see filter-scan.sh for code to generate).
+
+```{r read in files}
+fst.UKUS.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_UKUS_50kb.windowed.weir.fst",sep="\t"))
+fst.AUUK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_AUUK_50kb.windowed.weir.fst",sep="\t"))
+fst.USAU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_AUUS_50kb.windowed.weir.fst",sep="\t"))
+pi.UK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_UK_pi_50kb.windowed.pi",sep="\t"))
+pi.AU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_AU_pi_50kb.windowed.pi",sep="\t"))
+pi.US.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_US_pi_50kb.windowed.pi",sep="\t"))
+TajD.UK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_UK_TajimaD_50kb.Tajima.D",sep="\t"))
+TajD.AU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_AU_TajimaD_50kb.Tajima.D",sep="\t"))
+TajD.US.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_US_TajimaD_50kb.Tajima.D",sep="\t"))
+```
+
+vcftools outputs a few identifies for position: "CHROM," "BIN_START" and "BIN_END" for .fst and .pi files, but only "CHROM" AND "BIN_START" for .Tajima.D files. Unfortunately, the numbering is off, so we'll add 1 to every "BIN_START" in the .Tajima.D files.
+
+```{r fix Tajima D bin start}
+head(TajD.AU.50kb)
+head(fst.AUUK.50kb)
+TajD.UK.50kb$BIN_START <- TajD.UK.50kb$BIN_START + 1
+TajD.AU.50kb$BIN_START <- TajD.AU.50kb$BIN_START + 1
+TajD.US.50kb$BIN_START <- TajD.US.50kb$BIN_START + 1
+```
+
+Now BIN_START should match. To use dplyr, we'll need a column that specifes a unique position in the genome. Create a new column that joins "CHROM" and "BIN_START" so that we match each value based on actual position in the genome.
+
+```{r make position identifier}
+fst.UKUS.50kb$POS_ID <- paste(fst.UKUS.50kb$CHROM,fst.UKUS.50kb$BIN_START,sep="-")
+fst.AUUK.50kb$POS_ID <- paste(fst.AUUK.50kb$CHROM,fst.AUUK.50kb$BIN_START,sep="-")
+fst.USAU.50kb$POS_ID <- paste(fst.USAU.50kb$CHROM,fst.USAU.50kb$BIN_START,sep="-")
+pi.UK.50kb$POS_ID <- paste(pi.UK.50kb$CHROM,pi.UK.50kb$BIN_START,sep="-")
+pi.AU.50kb$POS_ID <- paste(pi.AU.50kb$CHROM,pi.AU.50kb$BIN_START,sep="-")
+pi.US.50kb$POS_ID <- paste(pi.US.50kb$CHROM,pi.US.50kb$BIN_START,sep="-")
+TajD.UK.50kb$POS_ID <- paste(TajD.UK.50kb$CHROM,TajD.UK.50kb$BIN_START,sep="-")
+TajD.AU.50kb$POS_ID <- paste(TajD.AU.50kb$CHROM,TajD.AU.50kb$BIN_START,sep="-")
+TajD.US.50kb$POS_ID <- paste(TajD.US.50kb$CHROM,TajD.US.50kb$BIN_START,sep="-")
+```
+
+Now drop column names that we no longer need, otherwise we'll have a giant table after all the merging.
+```{r drop duplicate columns}
+fst.AUUK.50kb <- fst.AUUK.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+fst.USAU.50kb <- fst.USAU.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+pi.UK.50kb <- pi.UK.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+pi.AU.50kb <- pi.AU.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+pi.US.50kb <- pi.US.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
+TajD.UK.50kb <- TajD.UK.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
+TajD.AU.50kb <- TajD.AU.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
+TajD.US.50kb <- TajD.US.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
+```
+
+We'll join tables based on the unique position identified (POS_ID). The rename() command ensures that each new column header specifies population (new name first). Heads up: each time you join two tables, those two tables are no longer accessible except as a joined table! 
+
+```{r join data}
+fstUKUS.fstAUUK.50kb <- left_join(fst.UKUS.50kb,fst.AUUK.50kb, by = "POS_ID", copy = FALSE, suffix=c("_UKUS","_AUUK"))
+fst.50kb <- left_join(fstUKUS.fstAUUK.50kb,fst.USAU.50kb, by = "POS_ID", copy = FALSE, suffix=c("","_USAU"))
+fst.50kb <- rename(fst.50kb, WEIGHTED_FST_USAU = WEIGHTED_FST)
+fst.50kb <- rename(fst.50kb, MEAN_FST_USAU = MEAN_FST)
+fst.50kb.piUK <- left_join(fst.50kb,pi.UK.50kb, by = "POS_ID", copy = FALSE)
+fst.50kb.piUK.piUS <- left_join(fst.50kb.piUK,pi.US.50kb, by = "POS_ID", copy = FALSE,suffix=c("_UK","_US"))
+fst.pi.50kb <- left_join(fst.50kb.piUK.piUS,pi.AU.50kb, by = "POS_ID", copy = FALSE)
+fst.pi.50kb <- rename(fst.pi.50kb, PI_AU = PI)
+fst.pi.50kb.TajDUK <- left_join(fst.pi.50kb,TajD.UK.50kb, by = "POS_ID", copy = FALSE)
+fst.pi.50kb.TajDUK.TajDUS <- left_join(fst.pi.50kb.TajDUK,TajD.US.50kb, by = "POS_ID", copy = FALSE, suffix=c("_UK","_US"))
+div <- left_join(fst.pi.50kb.TajDUK.TajDUS,TajD.AU.50kb, by = "POS_ID", copy = FALSE)
+div <- rename(div, TajimaD_AU = TajimaD)
+```
+
+We're going to drop data from:
+* small scaffolds (which conveniently start with 'KQ' or 'LNCF', 
+* any rows (positions) with missing data (NA), 
+* and also coerce "negative" FST or pi to zero. 
+We replace POS_ID (which was converted to numeric) with SNP.
+For the qqman package, chromosomes need to be a numeric value, so we also use lapply() below to rename chromosomes.
+```{r clean up data}
+div <- filter(div, !grepl('KQ',CHROM))
+div <- filter(div, !grepl('LNCF',CHROM))
+div <- filter(div, !grepl('Unknown',CHROM))
+div <- div %>% drop_na()
+div[,c(5:6)][div[,c(5:6)] < 0] <- 0
+div[,c(8:14)][div[,c(8:14)] < 0] <- 0
+div <- data.frame(lapply(div, function(x) {gsub("1A", "1.25", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("1B", "1.75", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("4A", "4.5", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("LG5", "28", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("LGE22", "29", x)}))
+div <- data.frame(lapply(div, function(x) {gsub("Z", "0", x)}))
+indx <- sapply(div, is.factor)
+div[indx] <- lapply(div[indx], function(x) as.numeric(as.character(x)))
+div <- div %>% select(-POS_ID)
+div$SNP <- seq.int(nrow(div))
+str(div)
+```
+
+Adding in a calculation here so that we don't have to repeat it when filtering div table. 
+```{r calculate diff in diversity}
+div$piUK.piAU <- div$PI_UK - div$PI_AU
+div$piUK.piUS <- div$PI_UK - div$PI_US
+```
+
+Write these tables to a file for access by other scripts.
+```{r write to file}
+write.csv(div,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.MAC4.csv")
+```
+
+Now we're ready to plot and calculate genome-wide values!
+

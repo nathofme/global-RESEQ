@@ -8,119 +8,15 @@ editor_options:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-This document describes how to go from raw vcftools output of diversity metrics (Fst, pi, and Tajima's D) to Manhattan plots, including making figures for the manuscript associated with this repo. This script is a result of brute forcing things to work: I am certainly no expert, and thus lots of the notes refer to my own dumb mistakes.
-
-```{r packages, message=FALSE}
 library(tidyverse)
 library(qqman)
 library(scales)
+
 ```
 
-## Prepare files: join vcftools output into a single table.
-
-First, read in raw output files from vcftools (in this repo, see filter-scan.sh for code to generate).
-
-```{r read in files}
-fst.UKUS.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_UKUS_50kb.windowed.weir.fst",sep="\t"))
-fst.AUUK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_AUUK_50kb.windowed.weir.fst",sep="\t"))
-fst.USAU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_AUUS_50kb.windowed.weir.fst",sep="\t"))
-pi.UK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_UK_pi_50kb.windowed.pi",sep="\t"))
-pi.AU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_AU_pi_50kb.windowed.pi",sep="\t"))
-pi.US.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_US_pi_50kb.windowed.pi",sep="\t"))
-TajD.UK.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_UK_TajimaD_50kb.Tajima.D",sep="\t"))
-TajD.AU.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_AU_TajimaD_50kb.Tajima.D",sep="\t"))
-TajD.US.50kb <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseudochrom_US_TajimaD_50kb.Tajima.D",sep="\t"))
+```{r read in data}
+div <- read.csv(file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.MAC4.csv")
 ```
-
-vcftools outputs a few identifies for position: "CHROM," "BIN_START" and "BIN_END" for .fst and .pi files, but only "CHROM" AND "BIN_START" for .Tajima.D files. Unfortunately, the numbering is off, so we'll add 1 to every "BIN_START" in the .Tajima.D files.
-
-```{r fix Tajima D bin start}
-head(TajD.AU.50kb)
-head(fst.AUUK.50kb)
-TajD.UK.50kb$BIN_START <- TajD.UK.50kb$BIN_START + 1
-TajD.AU.50kb$BIN_START <- TajD.AU.50kb$BIN_START + 1
-TajD.US.50kb$BIN_START <- TajD.US.50kb$BIN_START + 1
-```
-
-Now BIN_START should match. To use dplyr, we'll need a column that specifes a unique position in the genome. Create a new column that joins "CHROM" and "BIN_START" so that we match each value based on actual position in the genome.
-
-```{r make position identifier}
-fst.UKUS.50kb$POS_ID <- paste(fst.UKUS.50kb$CHROM,fst.UKUS.50kb$BIN_START,sep="-")
-fst.AUUK.50kb$POS_ID <- paste(fst.AUUK.50kb$CHROM,fst.AUUK.50kb$BIN_START,sep="-")
-fst.USAU.50kb$POS_ID <- paste(fst.USAU.50kb$CHROM,fst.USAU.50kb$BIN_START,sep="-")
-pi.UK.50kb$POS_ID <- paste(pi.UK.50kb$CHROM,pi.UK.50kb$BIN_START,sep="-")
-pi.AU.50kb$POS_ID <- paste(pi.AU.50kb$CHROM,pi.AU.50kb$BIN_START,sep="-")
-pi.US.50kb$POS_ID <- paste(pi.US.50kb$CHROM,pi.US.50kb$BIN_START,sep="-")
-TajD.UK.50kb$POS_ID <- paste(TajD.UK.50kb$CHROM,TajD.UK.50kb$BIN_START,sep="-")
-TajD.AU.50kb$POS_ID <- paste(TajD.AU.50kb$CHROM,TajD.AU.50kb$BIN_START,sep="-")
-TajD.US.50kb$POS_ID <- paste(TajD.US.50kb$CHROM,TajD.US.50kb$BIN_START,sep="-")
-```
-
-Now drop column names that we no longer need, otherwise we'll have a giant table after all the merging.
-```{r drop duplicate columns}
-fst.AUUK.50kb <- fst.AUUK.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
-fst.USAU.50kb <- fst.USAU.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
-pi.UK.50kb <- pi.UK.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
-pi.AU.50kb <- pi.AU.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
-pi.US.50kb <- pi.US.50kb %>% select(-CHROM, -BIN_START, -BIN_END, -N_VARIANTS)
-TajD.UK.50kb <- TajD.UK.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
-TajD.AU.50kb <- TajD.AU.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
-TajD.US.50kb <- TajD.US.50kb %>% select(-CHROM, -BIN_START, -N_SNPS)
-```
-
-We'll join tables based on the unique position identified (POS_ID). The rename() command ensures that each new column header specifies population (new name first). Heads up: each time you join two tables, those two tables are no longer accessible except as a joined table! 
-
-```{r join data}
-fstUKUS.fstAUUK.50kb <- left_join(fst.UKUS.50kb,fst.AUUK.50kb, by = "POS_ID", copy = FALSE, suffix=c("_UKUS","_AUUK"))
-fst.50kb <- left_join(fstUKUS.fstAUUK.50kb,fst.USAU.50kb, by = "POS_ID", copy = FALSE, suffix=c("","_USAU"))
-fst.50kb <- rename(fst.50kb, WEIGHTED_FST_USAU = WEIGHTED_FST)
-fst.50kb <- rename(fst.50kb, MEAN_FST_USAU = MEAN_FST)
-fst.50kb.piUK <- left_join(fst.50kb,pi.UK.50kb, by = "POS_ID", copy = FALSE)
-fst.50kb.piUK.piUS <- left_join(fst.50kb.piUK,pi.US.50kb, by = "POS_ID", copy = FALSE,suffix=c("_UK","_US"))
-fst.pi.50kb <- left_join(fst.50kb.piUK.piUS,pi.AU.50kb, by = "POS_ID", copy = FALSE)
-fst.pi.50kb <- rename(fst.pi.50kb, PI_AU = PI)
-fst.pi.50kb.TajDUK <- left_join(fst.pi.50kb,TajD.UK.50kb, by = "POS_ID", copy = FALSE)
-fst.pi.50kb.TajDUK.TajDUS <- left_join(fst.pi.50kb.TajDUK,TajD.US.50kb, by = "POS_ID", copy = FALSE, suffix=c("_UK","_US"))
-div <- left_join(fst.pi.50kb.TajDUK.TajDUS,TajD.AU.50kb, by = "POS_ID", copy = FALSE)
-div <- rename(div, TajimaD_AU = TajimaD)
-```
-
-We're going to drop data from:
-* small scaffolds (which conveniently start with 'KQ' or 'LNCF', 
-* any rows (positions) with missing data (NA), 
-* and also coerce "negative" FST or pi to zero. 
-We replace POS_ID (which was converted to numeric) with SNP.
-For the qqman package, chromosomes need to be a numeric value, so we also use lapply() below to rename chromosomes.
-```{r clean up data}
-div <- filter(div, !grepl('KQ',CHROM))
-div <- filter(div, !grepl('LNCF',CHROM))
-div <- filter(div, !grepl('Unknown',CHROM))
-div <- div %>% drop_na()
-div[,c(5:6)][div[,c(5:6)] < 0] <- 0
-div[,c(8:14)][div[,c(8:14)] < 0] <- 0
-div <- data.frame(lapply(div, function(x) {gsub("1A", "1.25", x)}))
-div <- data.frame(lapply(div, function(x) {gsub("1B", "1.75", x)}))
-div <- data.frame(lapply(div, function(x) {gsub("4A", "4.5", x)}))
-div <- data.frame(lapply(div, function(x) {gsub("LG5", "28", x)}))
-div <- data.frame(lapply(div, function(x) {gsub("LGE22", "29", x)}))
-div <- data.frame(lapply(div, function(x) {gsub("Z", "0", x)}))
-indx <- sapply(div, is.factor)
-div[indx] <- lapply(div[indx], function(x) as.numeric(as.character(x)))
-div <- div %>% select(-POS_ID)
-div$SNP <- seq.int(nrow(div))
-str(div)
-```
-
-Adding in a calculation here so that we don't have to repeat it when filtering div table. 
-```{r calculate diff in diversity}
-div$piUK.piAU <- div$PI_UK - div$PI_AU
-div$piUK.piUS <- div$PI_UK - div$PI_US
-```
-
-Now we're ready to plot and calculate genome-wide values!
-
 
 # Exploring genetic variation
 
@@ -185,32 +81,6 @@ write.csv(div.outliers.AUUK,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ
 ```
 
 
-What's going on w/ other metrics at these outliers?
-```{r pi and TajD at outliers}
-summary(div.outliers.AUUK$PI_UK)
-summary(div.outliers.AUUK$PI_AU)
-summary(div.outliers.AUUK$TajimaD_AU)
-summary(div.outliers.AUUK$TajimaD_UK)
-summary(div.outliers.USUK$PI_US)
-summary(div.outliers.USUK$PI_UK)
-summary(div.outliers.USUK$TajimaD_US)
-summary(div.outliers.USUK$TajimaD_UK)
-```
-
-```{r fitting distributions in outliers}
-library(fitdistrplus)
-descdist(div.outliers.AUUK$PI_UK)
-descdist(div.outliers.AUUK$PI_AU)
-descdist(div.outliers.USUK$PI_UK)
-descdist(div.outliers.USUK$PI_US)
-
-#beta.outliers.AUUK <- fitdist(div.outliers.AUUK$PI_AU, "beta")
-#summary(beta.outliers.AUUK)
-
-#beta.outliers.USUK <- fitdist(div.outliers.USUK$PI_US, "beta")
-#summary(beta.outliers.USUK)
-```
-
 ```{r low diff among invasions at outliers}
 
 div.outliers.AUUK.lowFstUSAU <- div.outliers.AUUK[which(div.outliers.AUUK$WEIGHTED_FST_USAU < 0.01 ),] 
@@ -226,213 +96,32 @@ intersect(unique(div.outliers.AUUK.lowFstUSAU$CHROM),unique(div.outliers.USUK.lo
 ```
 Possible parallel "selection" ?
 
-## Histograms of FST, pi
 
-What's the statistical distribution of these values?
-```{r histogram of Fst}
+# Novel pi
 
-descdist(div$WEIGHTED_FST_AUUK)
-descdist(div$WEIGHTED_FST_UKUS)
-descdist(div$WEIGHTED_FST_USAU)
-
-lab.AU <- rep("AU.UK",length(div$WEIGHTED_FST_AUUK))
-lab.US <- rep("UK.US",length(div$WEIGHTED_FST_UKUS))
-Fst.group <- c(lab.AU,lab.US)
-Fst.hist.data <- c(div$WEIGHTED_FST_AUUK,div$WEIGHTED_FST_USUK)
-Fst.hist <- data.frame(Fst = Fst.hist.data, population = Fst.group)
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_Fst.pdf",width=4,height=3)
-ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
-  theme_classic() +
-  geom_density(alpha=0.5,lwd=0.5) +
-  scale_fill_manual(values=c("#F2C14E","#2c81a8")) + xlim(0,0.5) + 
-  xlab("Fst") + labs(fill="Population") + 
-  geom_vline(xintercept=0.03,colour=alpha("#F2C14E"),linetype="dashed", size=1) +
-  geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
-  geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
-dev.off()
-ggplot(Fst.hist, aes(x=Fst, y=..density.., fill=population)) +
-  theme_classic() +
-  geom_density(alpha=0.5,lwd=0.5) +
-  scale_fill_manual(values=c("#F2C14E","#2c81a8")) + xlim(0,0.5) + 
-  xlab("Fst") + labs(fill="Population") + 
-  geom_vline(xintercept=0.03,colour=alpha("#F2C14E"),linetype="dashed", size=1) +
-  geom_vline(xintercept=0.01,colour=alpha("#2c81a8"),linetype="dashed", size=1) +
-  geom_vline(xintercept=0.08,colour=alpha("gray50"),linetype="dotted", size=0.5)
-```
-
-```{r Fst vs pi overall}
-ggplot(data=div) +
-  geom_point(aes(x=div$WEIGHTED_FST_UKUS, y=div$PI_US),col="#2c81a8",cex=0.7) +
-  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
-  xlab("") + ylab("") +
-  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=PI_US),method="loess",col="black",lwd=0.5) +
-  xlim(0,0.31) + ylim(0,0.04) + theme_classic()
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.USUK.pdf",height=2,width=2)
-ggplot(data=div) +
-  geom_point(aes(x=div$WEIGHTED_FST_UKUS, y=div$PI_US),col="#2c81a8",cex=0.7) +
-  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
-  xlab("") + ylab("") +
-  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=PI_US),method="loess",col="black",lwd=0.5) +
-  xlim(0,0.31) + ylim(0,0.04) + theme_classic()
-dev.off()
-
-ggplot(data=div) +
-  geom_point(aes(x=div$WEIGHTED_FST_AUUK, y=div$PI_AU),col="#F2C14E",cex=0.7) +
-  xlim(0,0.31) + ylim(0,0.04) + theme_classic() +
-  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
-  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=PI_AU),method="loess",col="black",lwd=0.5) +
-  xlab("") + ylab("")
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.AUUK.pdf",height=2,width=2)
-ggplot(data=div) +
-  geom_point(aes(x=div$WEIGHTED_FST_AUUK, y=div$PI_AU),col="#F2C14E",cex=0.7) +
-  xlim(0,0.31) + ylim(0,0.04) + theme_classic() +
-  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
-  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=PI_AU),method="loess",col="black",lwd=0.5) +
-  xlab("") + ylab("")
-dev.off()
-```
-
-```{r dist and histogram of pi overall}
-summary(div$PI_AU)
-summary(div$PI_UK)
-summary(div$PI_US)
-
-descdist(div$PI_US)
-#norm.piUS.fit <- fitdist(div$PI_US,distr="norm")
-#summary(norm.piUS.fit)
-
-descdist(div$PI_UK)
-#norm.piUK.fit <- fitdist(div$PI_UK,distr="norm")
-#summary(norm.piUK.fit)
-
-descdist(div$PI_AU)
-#norm.piAU.fit <- fitdist(div$PI_AU,distr="norm")
-#summary(norm.piAU.fit)
-
-lab.AU <- rep("AU",length(div$PI_AU))
-lab.US <- rep("US",length(div$PI_US))
-lab.UK <- rep("UK",length(div$PI_UK))
-group <- c(lab.AU,lab.US,lab.UK)
-pi.hist.data <- c(div$PI_UK,div$PI_US,div$PI_AU)
-pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
-str(pi.hist.lab)
-ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
-  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
-  scale_fill_manual(values=c("black","#2c81a8","#F2C14E")) + xlim(-0.0001,0.02) + 
-  xlab("Pi") + labs(fill="Population") +
-  geom_vline(xintercept=mean(div$PI_AU),colour=alpha("#F2C14E"),linetype="dashed", size=1) +
-  geom_vline(xintercept=mean(div$PI_US),colour=alpha("#2c81a8"),linetype="dashed", size=1) +
-  theme(legend.position="none")
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_Pi.pdf",width=4,height=3)
-ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
-  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
-  scale_fill_manual(values=c("black","#2c81a8","#F2C14E")) + xlim(-0.0001,0.02) + 
-  xlab("Pi") + labs(fill="Population") +
-  geom_vline(xintercept=mean(div$PI_US),colour=alpha("#2c81a8"),linetype="dashed", size=1) +
-  geom_vline(xintercept=mean(div$PI_AU),colour=alpha("#F2C14E"),linetype="dashed", size=1) +
-  theme(legend.position="none")
-dev.off()
-
-```
-Average nucleotide diversity for both invasions is the same (0.003). There are two vertical lines overlaid in the plot above.
-
-```{r scatterplots of pi}
-ggplot(data=div) +
-  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
-  xlab("") + ylab("") + xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_USvsUK.pdf",width=2,height=2)
-ggplot(data=div) +
-  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
-  xlab("") + ylab("") + xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
-dev.off()
-
-ggplot(data=div.outliers.USUK) +
-  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
-  xlab("") + ylab("") + xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/PiOutliers_USvsUK.pdf",width=2,height=2)
-ggplot(data=div.outliers.USUK) +
-  geom_point(aes(x=PI_UK, y=PI_US),col="#2c81a8",cex=0.7) +
-  xlab("") + ylab("") + xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_US),span=0.2,method="loess",col="black",lwd=0.5)
-dev.off()
-
-ggplot(data=div) +
-  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
-  xlab("") + ylab("") +
-  xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_AUvsUK.pdf",width=2,height=2)
-ggplot(data=div) +
-  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
-  xlab("") + ylab("") +
-  xlim(0,0.02) + ylim(0,0.02) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
-dev.off()
-
-ggplot(data=div.outliers.AUUK) +
-  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
-  xlab("") + ylab("") +
-  xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
-dev.off()
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Pi_AUvsUK.pdf",width=2,height=2)
-ggplot(data=div.outliers.AUUK) +
-  geom_point(aes(x=PI_UK, y=PI_AU),col="#F2C14E",cex=0.7) +
-  xlab("") + ylab("") +
-  xlim(0,0.01) + ylim(0,0.01) + theme_classic() +
-  theme(axis.text=element_text(size=7,colour="black")) +
-  stat_smooth(aes(x=PI_UK, y=PI_AU),span=0.2,method="loess",col="black",lwd=0.5) 
-dev.off()
-```
-
-
-
-```{r dist of Tajima D overall}
-descdist(div$TajimaD_US)
-descdist(div$TajimaD_UK)
-descdist(div$TajimaD_AU)
-
-descdist(div.outliers.USUK$TajimaD_US)
-descdist(div.outliers.AUUK$TajimaD_AU)
-
-```
-
-
-# Step 4: What's the impact of the genetic bottlenecks and subsequent expansion on genetic diversity in each invasion?
-
-What's the difference in diversity between native and invasive ranges?
+What's the impact of the genetic bottlenecks and subsequent expansion on genetic diversity in each invasion? What's the difference in diversity between native and invasive ranges?
 
 When comparing ancestral diversity to a bottlenecked invasive population, we'd expect to see lower diversity in the invasive range overall. This difference would be more pronounced in regions that had differentiated from the native range (e.g., where drift and/or selection are more pronounced).
 
 Here, difference in pi > 0 means that diversity is higher in the native range than in the invasive.
 
 ```{r describing diff in diversity}
+library(fitdistrplus)
 summary(div$piUK.piAU)
 qqnorm(div$piUK.piAU, pch = 16)
 qqline(div$piUK.piAU, pch = 16)
 descdist(div$piUK.piAU)
-
 summary(div$piUK.piUS)
 qqnorm(div$piUK.piUS, pch = 16)
 qqline(div$piUK.piUS, pch = 16)
 descdist(div$piUK.piUS)
 ```
 
+
 ```{r higher diversity in native range}
 div.hiUKpi.vsAU <- div[which(div$piUK.piAU > 0),]
 div.hiUKpi.vsUS <- div[which(div$piUK.piUS > 0),]
 div.hiUKpi.both <- div.hiUKpi.vsAU[which(div$piUK.piUS > 0),]
-
 length(div.hiUKpi.vsAU$piUK.piAU)/length(div$piUK.piAU) # % of windows that have higher pi in native
 length(div.hiUKpi.vsUS$piUK.piUS)/length(div$piUK.piUS) 
 length(div.hiUKpi.both$piUK.piUS)/length(div$piUK.piUS) # % of windows with higher pi in native for both invasive ranges
@@ -443,205 +132,68 @@ If drift acting on novel mutations explains most of the differentiation, then wh
 descdist(div.hifst.AUUK$piUK.piAU)
 div.hifst.AUUK.hiUKpi <- div.hifst.AUUK[which(div.hifst.AUUK$piUK.piAU > 0),]
 length(div.hifst.AUUK.hiUKpi$piUK.piAU)/length(div.hifst.AUUK$piUK.piAU) # % of high FST windows that have higher pi in native
-
 descdist(div.hifst.UKUS$piUK.piUS)
 div.hifst.UKUS.hiUKpi <- div.hifst.UKUS[which(div.hifst.UKUS$piUK.piUS > 0),]
 length(div.hifst.UKUS.hiUKpi$piUK.piUS)/length(div.hifst.UKUS$piUK.piUS) 
-
 div.hiUKpi.both <- div.hifst.UKUS.hiUKpi[which(div.hifst.AUUK.hiUKpi$piUK.piUS > 0),]
 length(div.hiUKpi.both$piUK.piUS)
-
 div.hifst.AUUK.hiAUpi <- div.hifst.AUUK[which(div.hifst.AUUK$piUK.piAU < 0),]
 div.hifst.UKUS.hiUSpi <- div.hifst.UKUS[which(div.hifst.UKUS$piUK.piUS < 0),]
-
 ```
 
-
-#### Now to plot these differences.
-```{r histogram of diff in diversity}
-lab.AU <- rep("AU",length(div$piUK.piAU))
-lab.US <- rep("US",length(div$piUK.piUS))
-group <- c(lab.AU,lab.US)
-pi.hist.data <- c(div$piUK.piUS,div$piUK.piAU)
-pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
-str(pi.hist.lab)
-ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
-  geom_vline(xintercept=0,colour="black",size=0.5) +
-  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
-  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
-  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
-  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
-  xlab("Difference in pi") + labs(fill="Population") +
-  geom_vline(xintercept=mean(div$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
-  geom_vline(xintercept=mean(div$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
-  theme(legend.position="none")
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_PiDifference.pdf",width=4,height=3)
-ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
-  geom_vline(xintercept=0,colour="black",size=0.5) +
-  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
-  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
-  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
-  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
-  xlab("Difference in pi") + labs(fill="Population") +
-  geom_vline(xintercept=mean(div$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
-  geom_vline(xintercept=mean(div$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
-  theme(legend.position="none")
-dev.off()
-
-```
-
-
-#### Plotting high-fst (FST > 0.1) windows only
-```{r histogram of diff in diversity with hi fst}
-lab.AU <- rep("AU",length(div.hifst.AUUK$piUK.piAU))
-lab.US <- rep("US",length(div.hifst.UKUS$piUK.piUS))
-group <- c(lab.AU,lab.US)
-pi.hist.data <- c(div.hifst.UKUS$piUK.piUS,div.hifst.AUUK$piUK.piAU)
-pi.hist.lab <- data.frame(pi = pi.hist.data, population = group)
-str(pi.hist.lab)
-ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
-  geom_vline(xintercept=0,colour="black",size=0.5) +
-  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
-  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
-  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
-  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
-  xlab("Difference in pi") + labs(fill="Population") +
-  geom_vline(xintercept=mean(div.hifst.AUUK$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
-  geom_vline(xintercept=mean(div.hifst.UKUS$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
-  theme(legend.position="none")
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/HistDensity_PiDifference_HiFst.pdf",width=4,height=3)
-ggplot(pi.hist.lab, aes(x=pi, y=..density.., fill=population)) +
-  geom_vline(xintercept=0,colour="black",size=0.5) +
-  geom_vline(xintercept=0.0005,colour="black",size=0.5) +
-  geom_vline(xintercept=-0.0005,colour="black",size=0.5) +
-  geom_density(alpha=0.8,lwd=0.5) + theme_classic() +
-  scale_fill_manual(values=c("#2c81a8","#F2C14E")) + 
-  xlab("Difference in pi") + labs(fill="Population") +
-  geom_vline(xintercept=mean(div.hifst.AUUK$piUK.piAU),colour=alpha("#F2C14E"), size=1) +
-  geom_vline(xintercept=mean(div.hifst.UKUS$piUK.piUS),colour=alpha("#2c81a8"), size=1) +
-  theme(legend.position="none")
-dev.off()
-
-```
-
-
-Are regions with novel pi also highly differentiated? Expect this scatterplot to look bimodal, where shifts in diversity in either direction led to differentiation between populations.
-
-```{r scatterplot FST vs diff in diversity}
-
-ggplot(data=div) +
-  geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
-  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
-  xlab("") + ylab("") +
-  stat_smooth(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),method="loess",col="black",lwd=0.5) +
-  xlim(0,0.31) + ylim(-0.002,0.002) + theme_classic()
-
-ggplot(data=div) +
-  geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
-  #xlab("Fst (Native vs. Invasive)") + ylab("Pi Invasive") +
-  xlab("") + ylab("") +
-  stat_smooth(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),method="loess",col="black",lwd=0.5) +
-  xlim(0,0.31) + ylim(-0.002,0.002) + theme_classic()
-
-
-ggplot(data=div) +
-  geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
-  geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
-  xlab("Fst (Native vs. Invasive)") + ylab("Pi Native - Pi Invasive") +
-  xlim(-0.01,0.41) + ylim(-0.003,0.003) + theme_bw() +
-  geom_density_2d(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU), colour="#ffffff") +
-  geom_density_2d(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS), colour="#2c81a8") +
-  guides(col = guide_legend(label = TRUE, label.position = "bottom", 
-                           direction = "horizontal"))
-
-pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.pdf",height=5,width=5)
-ggplot(data=div) +
-  geom_point(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS),col="#2c81a8",cex=0.7) +
-  geom_point(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU),col="#F2C14E",cex=0.7) +
-  xlab("Fst (Native vs. Invasive)") + ylab("Pi Native - Pi Invasive") +
-  xlim(-0.01,0.41) + ylim(-0.003,0.003) + theme_bw() +
-  geom_density_2d(aes(x=WEIGHTED_FST_AUUK, y=piUK.piAU), colour="#ffffff") +
-  geom_density_2d(aes(x=WEIGHTED_FST_UKUS, y=piUK.piUS), colour="#2c81a8") +
-  guides(col = guide_legend(label = TRUE, label.position = "bottom", 
-                           direction = "horizontal"))
-dev.off()
-
-#pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/FstPi.density.USUK.pdf",height=2,width=2)
-
-#dev.off()
-
-
-```
 
 In a given window, if diversity in the invasive range is higher than that of the native range, it is possible that those variants are novel mutations. This filtering will tell us whether we should look at particular genotypes in these regions.
 
 ```{r filtering for only novel pi}
 div.novelpi <- div %>% 
   filter((div$piUK.piAU < 0) & (div$piUK.piUS < 0))
-
 # % of low native diversity SNPs are higher in diversity in both invasions
 # sanity check based on calc above
 length(div.novelpi$SNP)/length(div$SNP)
-
 div.novelUSpi <- div %>%
     filter(div$piUK.piUS < 0)
 length(div.novelUSpi$SNP)/length(div$SNP)
-
 div.novelAUpi <- div %>%
     filter(div$piUK.piAU < 0)
 length(div.novelAUpi$SNP)/length(div$SNP)
-
 ```
 
 How to test whether novel pi is evenly distributed across the genome?
 If even, then we expect to see a random sampling of chromosomes represented in this smaller dataset.
 
 ```{r distribution of novel pi across the genome}
-
 unique(div.novelpi$CHROM) # which chromosomes have higher invasive pi in both invasions
 unique(div.novelUSpi$CHROM) # just in US
 unique(div.novelAUpi$CHROM) # in AU
-
 length(unique(div.novelpi$CHROM))/length(unique(div$CHROM))
-
-
 length(unique(div.novelUSpi$SNP)) # are most of these higher invasive pi regions also the moderately differentiated windows
 length(unique(div.hifst.UKUS$SNP))
 length(unique(div.hifst.UKUS$SNP))/length(unique(div.novelUSpi$SNP))
-
 length(unique(div.novelAUpi$SNP))
 length(unique(div.hifst.AUUK$SNP))
 length(unique(div.hifst.AUUK$SNP))/length(unique(div.novelAUpi$SNP))
-
 ```
 This is a different calculation than asking whether differentiated windows are also high in invasive diversity, since we're drawing from different sets. 
 
 Can we color points in the manhattan plot by diff in diversity 
 ```{r highlight novel pi in manhattans}
-
 SNP.novelUSpi <- div.novelUSpi$SNP
 SNP.novelAUpi <- div.novelAUpi$SNP
-
 SNP.novelAUpi.hifstonly <- div.hifst.AUUK.hiAUpi$SNP
 SNP.novelUSpi.hifstonly <- div.hifst.UKUS.hiUSpi$SNP
-
 length(div.hifst.UKUS.hiUSpi$SNP) 
 length(div.hifst.AUUK.hiAUpi$SNP)
-
 manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UKUS", 
           ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
           highlight=SNP.novelUSpi.hifstonly,
           cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
 #pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Fst.UKUS.Manhattan.pdf",w=12,h=3)
-
 #dev.off()
-
 manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_AUUK", 
           ylim=c(0,0.41),ylab=NA,xlab=NA,logp = FALSE,col=c("grey45","grey65"),
           highlight=SNP.novelAUpi.hifstonly,
           cex=1,cex.axis=1, chrlabs=c("Z",1,"1A","1B",2,3,4,"4A",5:29))
 #pdf("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Fst.AUUK.Manhattan.pdf",w=12,h=3)
-
 #dev.off()
 ```
 
@@ -649,18 +201,14 @@ manhattan(div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_AUUK",
 #### What's going on at outlier windows in particular? 
 
 ```{r outliers: AU pi greater than UK pi}
-
 div.outliers.hiAUpi <- div.outliers.AUUK[which(div.outliers.AUUK$piUK.piAU < 0),]
-
 length(div.outliers.hiAUpi$SNP)
 length(div.outliers.hiAUpi$SNP)/length(div.outliers.AUUK$SNP)
 ```
 % of FST outlier windows have higher diversity in AU 
 
 ```{r outliers: US pi greater than UK pi}
-
 div.outliers.hiUSpi <- div.outliers.USUK[which(div.outliers.USUK$piUK.piUS < 0),]
-
 length(div.outliers.hiUSpi$SNP) 
 length(div.outliers.hiUSpi$SNP)/length(div.outliers.USUK$SNP)
 ```
@@ -668,11 +216,11 @@ length(div.outliers.hiUSpi$SNP)/length(div.outliers.USUK$SNP)
 
 ```{r distribution of outliers with higher invasive pi across genome}
 intersect(div.outliers.hiUSpi$CHROM,div.outliers.hiAUpi$CHROM)
-
 unique(div.outliers.hiAUpi$CHROM)
 unique(div.outliers.hiUSpi$CHROM) 
-
 ```
+
+
 
 ## Figures: Diversity underlying candidate peaks
 
