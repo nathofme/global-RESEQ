@@ -105,8 +105,8 @@ vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.mac2.vcf --thin 1000
 
 ##### for pop structure, use biall, hwe, mac > 2, prune 1 kb
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.hwe.vcf --mac 2 --thin 1000 --recode --out EUSTreseq.pseudochrom.allconf.filtered.biall.hwe.mac2.prune1kb.vcf &> vcftools-hwe-mac2-prune1kb.log &
-
-
+### After filtering, kept 868685 out of a possible 22002700 Sites
+### 544 MB
 
 # re-running pop gen calculations
 vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --freq --out EUSTreseq.pseudochrom.allconf.filtered.biall &> freq.log &

@@ -145,11 +145,17 @@ chrom2.freq <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global
 
 
 ```{r headers}
-
 head(chrom2.fst.UKUS)
 head(chrom2.pi.US)
 head(chrom2.TajD.US)
 head(chrom2.LROH)
 head(chrom2.freq)
+```
+
+These data give site-by-site balues, so we'll have many posiitions with no data (NA) in some of the comparisons.
+```{r join data for chrom 2}
+chrom2.fstUKUS.fstAUUK <- full_join(chrom2.fst.UKUS,chrom2.fst.AUUK, by = "POS", copy = FALSE, suffix=c("_UKUS","_AUUK"))
+str(chrom2.fstUKUS.fstAUUK)
 
 ```
+

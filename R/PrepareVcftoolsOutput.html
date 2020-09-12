@@ -548,6 +548,15 @@ chrom2.freq &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch
 ## 4 2         39200413     2        48 CA:0.916667 C:0.0833333   
 ## 5 2         39200491     2        48 G:0.916667  A:0.0833333   
 ## 6 2         39200545     2        46 G:0.978261  A:0.0217391</code></pre>
+<p>These data give site-by-site balues, so we’ll have many posiitions with no data (NA) in some of the comparisons.</p>
+<pre class="r"><code>chrom2.fstUKUS.fstAUUK &lt;- full_join(chrom2.fst.UKUS,chrom2.fst.AUUK, by = &quot;POS&quot;, copy = FALSE, suffix=c(&quot;_UKUS&quot;,&quot;_AUUK&quot;))
+str(chrom2.fstUKUS.fstAUUK)</code></pre>
+<pre><code>## tibble [138,929 × 5] (S3: tbl_df/tbl/data.frame)
+##  $ CHROM_UKUS                 : int [1:138929] 2 2 2 2 2 2 2 2 2 2 ...
+##  $ POS                        : int [1:138929] 39200104 39200131 39200342 39200413 39200491 39200545 39200582 39200585 39200620 39200647 ...
+##  $ WEIR_AND_COCKERHAM_FST_UKUS: num [1:138929] 0.0714 0.1429 0 0.0148 0.0148 ...
+##  $ CHROM_AUUK                 : int [1:138929] 2 2 2 2 2 2 2 2 2 2 ...
+##  $ WEIR_AND_COCKERHAM_FST_AUUK: num [1:138929] -0.039 -0.0549 0 0 0 ...</code></pre>
 </div>
 
 
