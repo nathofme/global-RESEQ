@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```
 
 ```{r packages, message=FALSE}
@@ -13,7 +13,7 @@ library(qqman)
 library(scales)
 ```
 
-## Prepare files: join vcftools output into a single table.
+## Prepare files: join genome-wide vcftools output into a single table.
 
 First, read in raw output files from vcftools (in this repo, see filter-scan.sh for code to generate).
 
@@ -121,3 +121,35 @@ write.csv(div,"/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/Ge
 
 Now we're ready to plot and calculate genome-wide values!
 
+
+## Prepare chromosome-specific tables of site-by-site stats
+
+```{r read in files for chrom 2}
+
+chrom2.fst.UKUS <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.USUK.weir.fst",sep="\t",row.names = NULL)) 
+chrom2.fst.AUUK <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.AUUK.weir.fst",sep="\t",row.names = NULL)) 
+chrom2.fst.USAU <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.USAU.weir.fst",sep="\t",row.names = NULL)) 
+
+chrom2.pi.US <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.SitePi.US.sites.pi",sep="\t",row.names = NULL)) 
+chrom2.pi.UK <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.SitePi.UK.sites.pi",sep="\t",row.names = NULL)) 
+chrom2.pi.AU <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.SitePi.AU.sites.pi",sep="\t",row.names = NULL)) 
+
+chrom2.TajD.US <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.TajimaD.US.Tajima.D",sep="\t",row.names = NULL)) 
+chrom2.TajD.UK <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.TajimaD.UK.Tajima.D",sep="\t",row.names = NULL)) 
+chrom2.TajD.AU <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.TajimaD.AU.Tajima.D",sep="\t",row.names = NULL)) 
+
+chrom2.LROH <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.LROH",sep="\t",row.names = NULL)) 
+chrom2.freq <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.frq",sep="\t",row.names = NULL)) 
+
+```
+
+
+```{r headers}
+
+head(chrom2.fst.UKUS)
+head(chrom2.pi.US)
+head(chrom2.TajD.US)
+head(chrom2.LROH)
+head(chrom2.freq)
+
+```

@@ -369,8 +369,8 @@ summary {
 <pre class="r"><code>library(tidyverse)
 library(qqman)
 library(scales)</code></pre>
-<div id="prepare-files-join-vcftools-output-into-a-single-table." class="section level2">
-<h2>Prepare files: join vcftools output into a single table.</h2>
+<div id="prepare-files-join-genome-wide-vcftools-output-into-a-single-table." class="section level2">
+<h2>Prepare files: join genome-wide vcftools output into a single table.</h2>
 <p>First, read in raw output files from vcftools (in this repo, see filter-scan.sh for code to generate).</p>
 <pre class="r"><code>fst.UKUS.50kb &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_UKUS_50kb.windowed.weir.fst&quot;,sep=&quot;\t&quot;))
 fst.AUUK.50kb &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/EUSTreseq_pseud_nostep_AUUK_50kb.windowed.weir.fst&quot;,sep=&quot;\t&quot;))
@@ -480,6 +480,74 @@ div$piUK.piUS &lt;- div$PI_UK - div$PI_US</code></pre>
 <p>Write these tables to a file for access by other scripts.</p>
 <pre class="r"><code>write.csv(div,&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/GenomeScanInput.inclInvariant.csv&quot;)</code></pre>
 <p>Now we’re ready to plot and calculate genome-wide values!</p>
+</div>
+<div id="prepare-chromosome-specific-tables-of-site-by-site-stats" class="section level2">
+<h2>Prepare chromosome-specific tables of site-by-site stats</h2>
+<pre class="r"><code>chrom2.fst.UKUS &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.USUK.weir.fst&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.fst.AUUK &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.AUUK.weir.fst&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.fst.USAU &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.USAU.weir.fst&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+
+chrom2.pi.US &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.SitePi.US.sites.pi&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.pi.UK &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.SitePi.UK.sites.pi&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.pi.AU &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.SitePi.AU.sites.pi&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+
+chrom2.TajD.US &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.TajimaD.US.Tajima.D&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.TajD.UK &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.TajimaD.UK.Tajima.D&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.TajD.AU &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.TajimaD.AU.Tajima.D&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+
+chrom2.LROH &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.LROH&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
+chrom2.freq &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.frq&quot;,sep=&quot;\t&quot;,row.names = NULL)) </code></pre>
+<pre class="r"><code>head(chrom2.fst.UKUS)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   CHROM      POS WEIR_AND_COCKERHAM_FST
+##   &lt;int&gt;    &lt;int&gt;                  &lt;dbl&gt;
+## 1     2 39200104                0.0714 
+## 2     2 39200131                0.143  
+## 3     2 39200342                0      
+## 4     2 39200413                0.0148 
+## 5     2 39200491                0.0148 
+## 6     2 39200545               -0.00905</code></pre>
+<pre class="r"><code>head(chrom2.pi.US)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   CHROM      POS    PI
+##   &lt;int&gt;    &lt;int&gt; &lt;dbl&gt;
+## 1     2 39200104 0    
+## 2     2 39200131 0    
+## 3     2 39200342 0    
+## 4     2 39200413 0.325
+## 5     2 39200491 0.325
+## 6     2 39200545 0</code></pre>
+<pre class="r"><code>head(chrom2.TajD.US)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+##   CHROM BIN_START N_SNPS TajimaD
+##   &lt;int&gt;     &lt;int&gt;  &lt;int&gt;   &lt;dbl&gt;
+## 1     2  39200413      1   0.156
+## 2     2  39200414      0 NaN    
+## 3     2  39200415      0 NaN    
+## 4     2  39200416      0 NaN    
+## 5     2  39200417      0 NaN    
+## 6     2  39200418      0 NaN</code></pre>
+<pre class="r"><code>head(chrom2.LROH)</code></pre>
+<pre><code>## # A tibble: 6 x 8
+##   CHROM AUTO_START AUTO_END MIN_START MAX_END N_VARIANTS_BETW… N_MISMATCHES
+##   &lt;int&gt;      &lt;int&gt;    &lt;int&gt;     &lt;int&gt;   &lt;int&gt;            &lt;int&gt;        &lt;int&gt;
+## 1     2   39262080 39265145  39259524  3.93e7              140            1
+## 2     2   39282404 39293042  39280980  3.93e7              185            4
+## 3     2   39293083 39293415  39293079  3.93e7               11            0
+## 4     2   39293599 39296551  39293569  3.93e7               34            0
+## 5     2   39296573 39296702  39296572  3.93e7               27            0
+## 6     2   39381337 39394342  39380754  3.94e7              240            2
+## # … with 1 more variable: INDV &lt;fct&gt;</code></pre>
+<pre class="r"><code>head(chrom2.freq)</code></pre>
+<pre><code>## # A tibble: 6 x 6
+##   row.names    CHROM   POS N_ALLELES N_CHR       X.ALLELE.FREQ.
+##   &lt;chr&gt;        &lt;int&gt; &lt;int&gt;     &lt;int&gt; &lt;fct&gt;       &lt;fct&gt;         
+## 1 2         39200104     2        48 G:0.9375    T:0.0625      
+## 2 2         39200131     2        48 C:0.875     A:0.125       
+## 3 2         39200342     2        48 T:0.979167  C:0.0208333   
+## 4 2         39200413     2        48 CA:0.916667 C:0.0833333   
+## 5 2         39200491     2        48 G:0.916667  A:0.0833333   
+## 6 2         39200545     2        46 G:0.978261  A:0.0217391</code></pre>
 </div>
 
 
