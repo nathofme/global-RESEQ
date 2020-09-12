@@ -592,3 +592,6 @@ axis(side=2, ylim=c(-2.4,3.4))
 axis(side=1)
 quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/manhattans_for_pub/Chromosome4A.ManhattanZoom.pdf", type="pdf")
 ```
+
+# Make bed files for BLAST of candidates
+

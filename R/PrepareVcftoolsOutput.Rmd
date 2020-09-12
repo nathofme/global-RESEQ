@@ -143,19 +143,28 @@ chrom2.freq <- as_tibble(read.csv("/Users/nataliehofmeister/Documents/Ch3-Global
 
 ```
 
-
-```{r headers}
-head(chrom2.fst.UKUS)
-head(chrom2.pi.US)
-head(chrom2.TajD.US)
-head(chrom2.LROH)
-head(chrom2.freq)
+Drop chromosome labels to clean up table.
+```{r drop chrom labels}
+chrom2.fst.AUUK <- chrom2.fst.AUUK %>% select(-CHROM)
+chrom2.fst.USAU <- chrom2.fst.USAU %>% select(-CHROM)
+chrom2.pi.US <- chrom2.pi.US %>% select(-CHROM)
+chrom2.pi.UK <- chrom2.pi.UK %>% select(-CHROM)
+chrom2.pi.AU <- chrom2.pi.AU %>% select(-CHROM)
+chrom2.TajD.US <- chrom2.TajD.US %>% select(-CHROM)
+chrom2.TajD.UK <- chrom2.TajD.UK %>% select(-CHROM)
+chrom2.TajD.AU <- chrom2.TajD.AU %>% select(-CHROM)
 ```
 
-These data give site-by-site balues, so we'll have many posiitions with no data (NA) in some of the comparisons.
+These data give site-by-site values, so we'll have some posiitions with no data (NA) in some of the comparisons.
 ```{r join data for chrom 2}
 chrom2.fstUKUS.fstAUUK <- full_join(chrom2.fst.UKUS,chrom2.fst.AUUK, by = "POS", copy = FALSE, suffix=c("_UKUS","_AUUK"))
-str(chrom2.fstUKUS.fstAUUK)
-
+chrom2.fst <- full_join(chrom2.fstUKUS.fstAUUK,chrom2.fst.USAU, by = "POS", copy = FALSE, suffix=c("","_USAU"))
+chrom2.fst <- rename(chrom2.fst, WEIR_AND_COCKERHAM_FST_USAU = WEIR_AND_COCKERHAM_FST)
+chrom2.fst.piUK <- full_join(chrom2.fst,chrom2.pi.UK, by = "POS", copy=FALSE)
+chrom2.fst.piUK.piAU <- full_join(chrom2.fst.piUK,chrom2.pi.AU, by = "POS", copy=FALSE,suffix=c("_UK","_AU"))
+chrom2.fst.pi <- full_join(chrom2.fst.piUK.piAU,chrom2.pi.US, by = "POS", copy=FALSE)
+chrom2.fst.pi <- rename(chrom2.fst.pi, PI_US = PI)
+str(chrom2.fst.pi)
+write.csv(chrom2.fst.pi,file="/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.SiteStats.csv")
 ```
 

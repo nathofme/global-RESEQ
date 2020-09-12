@@ -497,66 +497,34 @@ chrom2.TajD.AU &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents
 
 chrom2.LROH &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.LROH&quot;,sep=&quot;\t&quot;,row.names = NULL)) 
 chrom2.freq &lt;- as_tibble(read.csv(&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.peak.frq&quot;,sep=&quot;\t&quot;,row.names = NULL)) </code></pre>
-<pre class="r"><code>head(chrom2.fst.UKUS)</code></pre>
-<pre><code>## # A tibble: 6 x 3
-##   CHROM      POS WEIR_AND_COCKERHAM_FST
-##   &lt;int&gt;    &lt;int&gt;                  &lt;dbl&gt;
-## 1     2 39200104                0.0714 
-## 2     2 39200131                0.143  
-## 3     2 39200342                0      
-## 4     2 39200413                0.0148 
-## 5     2 39200491                0.0148 
-## 6     2 39200545               -0.00905</code></pre>
-<pre class="r"><code>head(chrom2.pi.US)</code></pre>
-<pre><code>## # A tibble: 6 x 3
-##   CHROM      POS    PI
-##   &lt;int&gt;    &lt;int&gt; &lt;dbl&gt;
-## 1     2 39200104 0    
-## 2     2 39200131 0    
-## 3     2 39200342 0    
-## 4     2 39200413 0.325
-## 5     2 39200491 0.325
-## 6     2 39200545 0</code></pre>
-<pre class="r"><code>head(chrom2.TajD.US)</code></pre>
-<pre><code>## # A tibble: 6 x 4
-##   CHROM BIN_START N_SNPS TajimaD
-##   &lt;int&gt;     &lt;int&gt;  &lt;int&gt;   &lt;dbl&gt;
-## 1     2  39200413      1   0.156
-## 2     2  39200414      0 NaN    
-## 3     2  39200415      0 NaN    
-## 4     2  39200416      0 NaN    
-## 5     2  39200417      0 NaN    
-## 6     2  39200418      0 NaN</code></pre>
-<pre class="r"><code>head(chrom2.LROH)</code></pre>
-<pre><code>## # A tibble: 6 x 8
-##   CHROM AUTO_START AUTO_END MIN_START MAX_END N_VARIANTS_BETW… N_MISMATCHES
-##   &lt;int&gt;      &lt;int&gt;    &lt;int&gt;     &lt;int&gt;   &lt;int&gt;            &lt;int&gt;        &lt;int&gt;
-## 1     2   39262080 39265145  39259524  3.93e7              140            1
-## 2     2   39282404 39293042  39280980  3.93e7              185            4
-## 3     2   39293083 39293415  39293079  3.93e7               11            0
-## 4     2   39293599 39296551  39293569  3.93e7               34            0
-## 5     2   39296573 39296702  39296572  3.93e7               27            0
-## 6     2   39381337 39394342  39380754  3.94e7              240            2
-## # … with 1 more variable: INDV &lt;fct&gt;</code></pre>
-<pre class="r"><code>head(chrom2.freq)</code></pre>
-<pre><code>## # A tibble: 6 x 6
-##   row.names    CHROM   POS N_ALLELES N_CHR       X.ALLELE.FREQ.
-##   &lt;chr&gt;        &lt;int&gt; &lt;int&gt;     &lt;int&gt; &lt;fct&gt;       &lt;fct&gt;         
-## 1 2         39200104     2        48 G:0.9375    T:0.0625      
-## 2 2         39200131     2        48 C:0.875     A:0.125       
-## 3 2         39200342     2        48 T:0.979167  C:0.0208333   
-## 4 2         39200413     2        48 CA:0.916667 C:0.0833333   
-## 5 2         39200491     2        48 G:0.916667  A:0.0833333   
-## 6 2         39200545     2        46 G:0.978261  A:0.0217391</code></pre>
-<p>These data give site-by-site balues, so we’ll have many posiitions with no data (NA) in some of the comparisons.</p>
+<p>Drop chromosome labels to clean up table.</p>
+<pre class="r"><code>chrom2.fst.AUUK &lt;- chrom2.fst.AUUK %&gt;% select(-CHROM)
+chrom2.fst.USAU &lt;- chrom2.fst.USAU %&gt;% select(-CHROM)
+chrom2.pi.US &lt;- chrom2.pi.US %&gt;% select(-CHROM)
+chrom2.pi.UK &lt;- chrom2.pi.UK %&gt;% select(-CHROM)
+chrom2.pi.AU &lt;- chrom2.pi.AU %&gt;% select(-CHROM)
+chrom2.TajD.US &lt;- chrom2.TajD.US %&gt;% select(-CHROM)
+chrom2.TajD.UK &lt;- chrom2.TajD.UK %&gt;% select(-CHROM)
+chrom2.TajD.AU &lt;- chrom2.TajD.AU %&gt;% select(-CHROM)</code></pre>
+<p>These data give site-by-site values, so we’ll have some posiitions with no data (NA) in some of the comparisons.</p>
 <pre class="r"><code>chrom2.fstUKUS.fstAUUK &lt;- full_join(chrom2.fst.UKUS,chrom2.fst.AUUK, by = &quot;POS&quot;, copy = FALSE, suffix=c(&quot;_UKUS&quot;,&quot;_AUUK&quot;))
-str(chrom2.fstUKUS.fstAUUK)</code></pre>
-<pre><code>## tibble [138,929 × 5] (S3: tbl_df/tbl/data.frame)
-##  $ CHROM_UKUS                 : int [1:138929] 2 2 2 2 2 2 2 2 2 2 ...
+chrom2.fst &lt;- full_join(chrom2.fstUKUS.fstAUUK,chrom2.fst.USAU, by = &quot;POS&quot;, copy = FALSE, suffix=c(&quot;&quot;,&quot;_USAU&quot;))
+chrom2.fst &lt;- rename(chrom2.fst, WEIR_AND_COCKERHAM_FST_USAU = WEIR_AND_COCKERHAM_FST)
+chrom2.fst.piUK &lt;- full_join(chrom2.fst,chrom2.pi.UK, by = &quot;POS&quot;, copy=FALSE)
+chrom2.fst.piUK.piAU &lt;- full_join(chrom2.fst.piUK,chrom2.pi.AU, by = &quot;POS&quot;, copy=FALSE,suffix=c(&quot;_UK&quot;,&quot;_AU&quot;))
+chrom2.fst.pi &lt;- full_join(chrom2.fst.piUK.piAU,chrom2.pi.US, by = &quot;POS&quot;, copy=FALSE)
+chrom2.fst.pi &lt;- rename(chrom2.fst.pi, PI_US = PI)
+str(chrom2.fst.pi)</code></pre>
+<pre><code>## tibble [138,929 × 8] (S3: tbl_df/tbl/data.frame)
+##  $ CHROM                      : int [1:138929] 2 2 2 2 2 2 2 2 2 2 ...
 ##  $ POS                        : int [1:138929] 39200104 39200131 39200342 39200413 39200491 39200545 39200582 39200585 39200620 39200647 ...
 ##  $ WEIR_AND_COCKERHAM_FST_UKUS: num [1:138929] 0.0714 0.1429 0 0.0148 0.0148 ...
-##  $ CHROM_AUUK                 : int [1:138929] 2 2 2 2 2 2 2 2 2 2 ...
-##  $ WEIR_AND_COCKERHAM_FST_AUUK: num [1:138929] -0.039 -0.0549 0 0 0 ...</code></pre>
+##  $ WEIR_AND_COCKERHAM_FST_AUUK: num [1:138929] -0.039 -0.0549 0 0 0 ...
+##  $ WEIR_AND_COCKERHAM_FST_USAU: num [1:138929] 0 0.143 NaN 0.143 0.143 ...
+##  $ PI_UK                      : num [1:138929] 0.233 0.325 0.125 0.125 0.125 ...
+##  $ PI_AU                      : num [1:138929] 0.125 0.325 0 0 0 ...
+##  $ PI_US                      : num [1:138929] 0 0 0 0.325 0.325 ...</code></pre>
+<pre class="r"><code>write.csv(chrom2.fst.pi,file=&quot;/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/input/chrom2/chrom2.SiteStats.csv&quot;)</code></pre>
 </div>
 
 
