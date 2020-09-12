@@ -301,8 +301,8 @@ manhattan(chrom6.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UK
           highlight=SNP.novelUSpi.hifstonly,
           cex=1,cex.axis=1)
 
-chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16400),]
-chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16100),]
+chrom6.div.small <- chrom6.div[which(chrom6.div$SNP < 16450),]
+chrom6.div.small <- chrom6.div.small[which(chrom6.div.small$SNP > 16155),]
 
 head(chrom6.div.small)
 
@@ -315,9 +315,6 @@ chrom6.div.hifst <- chrom6.div.small[which(chrom6.div.small$SNP > 16263),]
 mean(chrom6.div.hifst$PI_UK) 
 mean(chrom6.div.hifst$PI_US) 
 mean(chrom6.div.hifst$PI_AU) 
-
-chrom6.div.med <- chrom6.div[which(chrom6.div$SNP < 16450),]
-chrom6.div.med <- chrom6.div.med[which(chrom6.div.med$SNP > 16155),]
 
 quartz(height=5,width=7)
 options(scipen=999)
@@ -358,25 +355,6 @@ axis(side=1)
 quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/manhattans_for_pub/Chromosome6.ManhattanZoom.pdf", type="pdf")
 ```
 
-
-```{r zoom out for FST USAU around this peak}
-quartz(height=3,width=7)
-options(scipen=999)
-par(new=T)
-plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_AUUK, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
-lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_AUUK, col="#F2C14E",lwd=2)
-par(new=T)
-plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_UKUS, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
-lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_UKUS, col="#2c81a8", lwd=2)
-par(new=T)
-plot((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, type="n", bty="n", axes=FALSE,  ylim=c(-0.01,0.4))
-lines((chrom6.div.med$BIN_START), chrom6.div.med$WEIGHTED_FST_USAU, col="grey50", lwd=1)
-axis(side=2,ylim=c(-0.01,0.4))
-abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
-abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
-quartz.save("/Users/nataliehofmeister/Documents/Ch3-Global-RESEQ/analysis/R/manhattans_for_pub/Chromosome6.BroaderFSTaroundPeak.pdf", type="pdf")
-```
-
 #### Chromosome 1
 
 ```{r manhattan of chrom 1} 
@@ -392,8 +370,8 @@ manhattan(chrom1.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_UK
           highlight=SNP.novelUSpi.hifstonly,
           cex=1,cex.axis=1)
 
-chrom1.div.small <- chrom1.div[which(chrom1.div$SNP < 6700),]
-chrom1.div.small <- chrom1.div.small[which(chrom1.div.small$SNP > 6400),]
+chrom1.div.small <- chrom1.div[which(chrom1.div$SNP < 6800),]
+chrom1.div.small <- chrom1.div.small[which(chrom1.div.small$SNP > 6350),]
 
 quartz(height=5,width=7)
 options(scipen=999)
@@ -411,14 +389,14 @@ axis(side=2,ylim=c(-0.2,0.4))
 abline(h=quantile(div$WEIGHTED_FST_UKUS,.99), col="#2c81a8", lwd=0.5)
 abline(h=quantile(div$WEIGHTED_FST_AUUK,.99), col="#F2C14E", lwd=0.5)
 par(new=T)
-plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.03))
+plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_AU, type="n", axes=FALSE, bty="n", ylim=c(0,0.04))
 lines((chrom1.div.small$BIN_START), chrom1.div.small$PI_AU, col="#F8DD9E", lwd=2)
 par(new=T)
-plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_US, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
 lines((chrom1.div.small$BIN_START), chrom1.div.small$PI_US, col="#66A3C0", lwd=2)
-axis(side=4, ylim=c(0,0.03))
+axis(side=4, ylim=c(0,0.04))
 par(new=T)
-plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.03))
+plot((chrom1.div.small$BIN_START), chrom1.div.small$PI_UK, type="n", axes=FALSE, xlab=NA, ylab=NA,  bty="n", ylim=c(0,0.04))
 lines((chrom1.div.small$BIN_START), chrom1.div.small$PI_UK, col="#39C855", lwd=1)
 par(mar=c(1,2,1,2))
 plot((chrom1.div.small$BIN_START), chrom1.div.small$TajimaD_AU, type="n",axes=FALSE, bty="n", xlab=NA, ylim=c(-2.4,3.4))
@@ -573,8 +551,8 @@ manhattan(chrom4A.div, chr="CHROM", bp="BIN_START", snp="SNP", p="WEIGHTED_FST_U
           highlight=SNP.novelUSpi.hifstonly,
           cex=1,cex.axis=1)
 
-chrom4A.div.small <- chrom4A.div[which(chrom4A.div$SNP < 13300),]
-chrom4A.div.small <- chrom4A.div.small[which(chrom4A.div.small$SNP > 13150),]
+chrom4A.div.small <- chrom4A.div[which(chrom4A.div$SNP < 13400),]
+chrom4A.div.small <- chrom4A.div.small[which(chrom4A.div.small$SNP > 13050),]
 
 quartz(height=5,width=7)
 options(scipen=999)
