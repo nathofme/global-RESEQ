@@ -129,30 +129,93 @@ grep -h CV log*.out
 # explored these patterns in GenomeScan.Rmd in same repo as this script
 
 # chromosome 1
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp XX --to-bp XX --freq --out Chrom1.Peak.Freq
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp XX --to-bp XX --weir-fst-pop us.txt --weir-fst-pop uk.txt --out Chrom1.Peak.SiteFst.USUK
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp XX --to-bp XX --site-pi --out Chrom1.Peak.SitePi
+# high FST region runs 100000001 to 113950000
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --freq --out chrom1.peak &> chrom1.freq.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --LROH --out chrom1.peak &> chrom1.LROH.log &
+
+# fst by site
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --weir-fst-pop us.txt --weir-fst-pop uk.txt  --out chrom1.peak.USUK &> chrom1.sitefst.usuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --weir-fst-pop au.txt --weir-fst-pop uk.txt  --out chrom1.peak.AUUK &> chrom1.sitefst.auuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --weir-fst-pop au.txt --weir-fst-pop us.txt  --out chrom1.peak.USAU &> chrom1.sitefst.usau.log &
+
+# pi by site
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom1.peak.SitePi.UK &> chrom1.peak.sitepi.uk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom1.peak.SitePi.AU &> chrom1.peak.sitepi.au.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom1.peak.SitePi.US &> chrom1.peak.sitepi.us.log &
+
+# TajD by site
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom1.peak.TajimaD.UK &> chrom1.peak.TajD.UK.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom1.peak.TajimaD.AU &> chrom1.peak.TajD.AU.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1 --from-bp 100000001 --to-bp 113950000 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom1.peak.TajimaD.US &> chrom1.peak.TajD.US.log &
+
+# chromosome 1A
+# high FST region runs from 40150001 to 55200000
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --freq --out chrom1A.peak &> chrom1A.freq.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --LROH --out chrom1A.peak &> chrom1A.LROH.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --weir-fst-pop us.txt --weir-fst-pop uk.txt  --out chrom1A.peak.USUK &> chrom1A.sitefst.usuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --weir-fst-pop au.txt --weir-fst-pop uk.txt  --out chrom1A.peak.AUUK &> chrom1A.sitefst.auuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --weir-fst-pop au.txt --weir-fst-pop us.txt  --out chrom1A.peak.USAU &> chrom1A.sitefst.usau.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom1A.peak.SitePi.UK &> chrom1A.peak.sitepi.uk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom1A.peak.SitePi.AU &> chrom1A.peak.sitepi.au.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom1A.peak.SitePi.US &> chrom1A.peak.sitepi.us.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom1A.peak.TajimaD.UK &> chrom1A.peak.TajD.UK.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom1A.peak.TajimaD.AU &> chrom1A.peak.TajD.AU.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 1.25 --from-bp 40150001 --to-bp 55200000 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom1A.peak.TajimaD.US &> chrom1A.peak.TajD.US.log &
 
 # chromosome 2
+# high FST region runs from 39200001 to 51650000 based on windows
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --freq --out chrom2.peak &> chrom2.freq.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --LROH --out chrom2.peak &> chrom2.LROH.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --weir-fst-pop us.txt --weir-fst-pop uk.txt  --out chrom2.peak.USUK &> chrom2.sitefst.usuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --weir-fst-pop au.txt --weir-fst-pop uk.txt  --out chrom2.peak.AUUK &> chrom2.sitefst.auuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --weir-fst-pop au.txt --weir-fst-pop us.txt  --out chrom2.peak.USAU &> chrom2.sitefst.usau.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom2.peak.SitePi.UK &> chrom2.peak.sitepi.uk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom2.peak.SitePi.AU &> chrom2.peak.sitepi.au.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom2.peak.SitePi.US &> chrom2.peak.sitepi.us.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom2.peak.TajimaD.UK &> chrom2.peak.TajD.UK.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom2.peak.TajimaD.AU &> chrom2.peak.TajD.AU.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 2 --from-bp 39200001 --to-bp 51650000 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom2.peak.TajimaD.US &> chrom2.peak.TajD.US.log &
 
+# chromosome 4
+# high FST region runs from 17200001 to 32250000
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --freq --out chrom4.peak &> chrom4.freq.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --LROH --out chrom4.peak &> chrom4.LROH.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --weir-fst-pop us.txt --weir-fst-pop uk.txt  --out chrom4.peak.USUK &> chrom4.sitefst.usuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --weir-fst-pop au.txt --weir-fst-pop uk.txt  --out chrom4.peak.AUUK &> chrom4.sitefst.auuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --weir-fst-pop au.txt --weir-fst-pop us.txt  --out chrom4.peak.USAU &> chrom4.sitefst.usau.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom4.peak.SitePi.UK &> chrom4.peak.sitepi.uk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom4.peak.SitePi.AU &> chrom4.peak.sitepi.au.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom4.peak.SitePi.US &> chrom4.peak.sitepi.us.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom4.peak.TajimaD.UK &> chrom4.peak.TajD.UK.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom4.peak.TajimaD.AU &> chrom4.peak.TajD.AU.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4 --from-bp 17200001 --to-bp 32250000 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom4.peak.TajimaD.US &> chrom4.peak.TajD.US.log &
+
+
+# chromosome 4A
+# high FST region runs from 50001 to 15150000
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --freq --out chrom4A.peak &> chrom4A.freq.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --LROH --out chrom4A.peak &> chrom4A.LROH.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --weir-fst-pop us.txt --weir-fst-pop uk.txt  --out chrom4A.peak.USUK &> chrom4A.sitefst.usuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --weir-fst-pop au.txt --weir-fst-pop uk.txt  --out chrom4A.peak.AUUK &> chrom4A.sitefst.auuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --weir-fst-pop au.txt --weir-fst-pop us.txt  --out chrom4A.peak.USAU &> chrom4A.sitefst.usau.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom4A.peak.SitePi.UK &> chrom4A.peak.sitepi.uk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom4A.peak.SitePi.AU &> chrom4A.peak.sitepi.au.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom4A.peak.SitePi.US &> chrom4A.peak.sitepi.us.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom4A.peak.TajimaD.UK &> chrom4A.peak.TajD.UK.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom4A.peak.TajimaD.AU &> chrom4A.peak.TajD.AU.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 4.5 --from-bp 50001 --to-bp 15150000 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom4A.peak.TajimaD.US &> chrom4A.peak.TajD.US.log &
 
 
 # chromosome 6
 # high FST region runs from 5350001 to 6300001 based on windows, extended by 50kb
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --freq --out Chrom6.Peak.Freq
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --LROH --out Chrom6.Peak.LROH
-
-# fst by site
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --weir-fst-pop us.txt --weir-fst-pop uk.txt  --out Chrom6.Peak.SiteFst.USUK
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --weir-fst-pop au.txt --weir-fst-pop uk.txt  --out Chrom6.Peak.SiteFst.AUUK
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --weir-fst-pop au.txt --weir-fst-pop us.txt  --out Chrom6.Peak.SiteFst.USAU
-
-# pi by site
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out Chrom6.Peak.SitePi.UK
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out Chrom6.Peak.SitePi.AU
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out Chrom6.Peak.SitePi.US
-
-# TajD by site
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out Chrom6.Peak.TajimaD.UK
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out Chrom6.Peak.TajimaD.AU
-vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5300001 --to-bp 6350001 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out Chrom6.Peak.TajimaD.US
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --freq --out chrom6.peak &> chrom6.freq.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --LROH --out chrom6.peak &> chrom6.LROH.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --weir-fst-pop us.txt --weir-fst-pop uk.txt --out chrom6.peak.USUK &> chrom6.sitefst.usuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --weir-fst-pop au.txt --weir-fst-pop uk.txt --out chrom6.peak.AUUK &> chrom6.sitefst.auuk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --weir-fst-pop au.txt --weir-fst-pop us.txt --out chrom6.peak.USAU &> chrom6.sitefst.usau.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --site-pi --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom6.peak.SitePi.UK &> chrom6.peak.sitepi.uk.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --site-pi --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom6.peak.SitePi.AU &> chrom6.peak.sitepi.au.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --site-pi --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom6.peak.SitePi.US &> chrom6.peak.sitepi.us.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --TajimaD 1 --indv uk1_sort --indv uk2_sort --indv uk3_sort --indv uk4_sort --indv uk5_sort --indv uk6_sort --indv uk7_sort --indv uk8_sort --out chrom6.peak.TajimaD.UK &> chrom6.peak.TajD.UK.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --TajimaD 1 --indv au1_sort --indv au2_sort --indv au3_sort --indv au4_sort --indv au5_sort --indv au6_sort --indv au7_sort --indv au8_sort --out chrom6.peak.TajimaD.AU &> chrom6.peak.TajD.AU.log &
+vcftools --vcf EUSTreseq.pseudochrom.allconf.filtered.biall.vcf --chr 6 --from-bp 5350001 --to-bp 6300001 --TajimaD 1 --indv us1_sort --indv us2_sort --indv us3_sort --indv us4_sort --indv us5_sort --indv us6_sort --indv us7_sort --indv us8_sort --out chrom6.peak.TajimaD.US &> chrom6.peak.TajD.US.log &
